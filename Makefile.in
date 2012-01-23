@@ -1,0 +1,69 @@
+################################################################
+# YAP/SWI-Prolog R interface package
+# Author:    Nicos Angelopoulos
+# Copyright: Perl License
+################################################################
+
+PACKAGE=real
+DOC=real
+PKGCFLAGS=@YAPR_INCLUDES@
+include ../Makefile.defs
+
+OBJS=	real.o
+SOLIBS=		real.@SO@
+
+LIBPL=		real.pl
+
+all:		$(SOLIBS)
+
+
+real.@SO@:	$(OBJS)
+		$(LD) $(LDSOFLAGS) -o $@ $(OBJS) $(LIBS) @EXTRA_LIBS_FOR_R@
+
+install:	$(SOLIBS) $(addprefix $(srcdir)/, $(LIBPL))
+		mkdir -p $(DESTDIR)$(SOLIBDIR)
+		rm -f $(DESTDIR)$(SOLIBDIR)/real.@SO@
+		$(INSTALL_PROGRAM) $(SOLIBS) $(SOLIBDIR)
+		mkdir -p $(DESTDIR)$(PLLIBDIR)
+		for f in $(LIBPL); do \
+		  $(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(PLLIBDIR); \
+		done
+		$(MKINDEX)
+
+ln-install::
+		$(MAKE) INSTALL_DATA="../ln-install" INSTALL_PROGRAM="../ln-install" install
+
+rpm-install:	install
+
+html-install::
+		mkdir -p $(DESTDIR)$(PKGDOC)
+		$(INSTALL) -m 644 $(DOC).html $(DESTDIR)$(PKGDOC)
+
+pdf-install::
+		mkdir -p $(DESTDIR)$(PKGDOC)
+		$(INSTALL) -m 644 $(DOC).pdf $(DESTDIR)$(PKGDOC)
+
+uninstall::
+		(cd $(SOLIBDIR) && rm -f $(TARGETS))
+		(cd $(PLBASE)/library && rm -f $(LIBPL))
+		$(MKINDEX)
+
+################################################################
+# Testing
+################################################################
+
+check::
+		(cd $(srcdir) && $(PL) -q -f test_zlib.pl -g test_zlib,halt -t 'halt(1)' )
+
+################################################################
+# Clean
+################################################################
+
+clean:
+		rm -f $(ZOBJ) *~ *.o *% a.out core config.log
+
+distclean:	clean
+		rm -f $(TARGETS) config.cache config.h config.status Makefile
+		rm -f $(DOC).aux $(DOC).log $(DOC).out $(DOC).toc
+		rm -rf html
+		rm -rf autom4te.cache
