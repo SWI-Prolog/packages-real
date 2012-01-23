@@ -1,0 +1,326 @@
+<html>
+<head>
+<title>r..eal 0:0:3 </title>
+<link rel="stylesheet" type="text/css" href="../../pldoc/pldoc.css">
+</head>
+
+<body>
+
+<h1 class="file">
+r..eal 0:0:3, 2011/12/22 </h1>
+
+<p>
+A C-based Prolog interface to R.
+
+<h2 class="wiki">Introduction</h2>
+
+<p>
+This library enables the communication with an R process started as a shared library. It is the result of the
+efforts of two research groups that have worked in parallel.
+The syntactic emphasis on a minimalistic interface. A single predicate (<a href="/doc_for?object=real:%20%3C-%20/%202">&lt;-/2</a>,<a href="/doc_for?object=real:%20%3C-%20/%201">&lt;-/1</a>) channels the bulk of the interactions.
+In addition to using R as a shared library, r..eal uses the c-interfaces of Yap and R to pass objects
+in both directions. The usual mode of operation is to load Prolog values on to R variables and then
+call an R function on these values. The return value of the called function can be either placed on R variable
+or passed back to Prolog. It has been tested extensively on YAP 6.3.0 on Linux machines but it should also compile and work
+on MS operating systems and Macs. We hope it will soon be ported to the SWI engine.
+
+<p>
+The main modes for utilising the interface are
+
+<pre class="code">
+        &lt;- +Rexpr
+        &lt;- +Rvar
+</pre>
+
+<p>
+Print Rvar or evaluate expression, Rexpr, in R
+
+<pre class="code">
+        +PLvar  &lt;- +Rexpr
+        +Rexpr1 &lt;- +Rexpr2
+        +Rvar   &lt;- +PLval
+        +PLvar  &lt;- +Rvar
+</pre>
+
+<p>
+Evaluate Rexpr and pass result to PLvar.
+
+<p>
+Pass Rexpr1 &lt;- Rexpr2 to R.
+
+<p>
+Pass PLval to Rvar (using the c-interface when Rvar is numeric, list or list of 2 levels). See data transfer below.
+
+<p>
+Assign contents of Rvar to PLvar using the c-interface.
+
+<h2 class="wiki">Syntax</h2>
+
+<p>
+There are syntactic conventions in R that make unparsable prolog code. Notably function and variable names
+are allowed to contain dots, square brackets are used to access parts of vectors and arrays and functions are allowed
+empty argument tuples. We have introduced relevant syntax which allows for easy transition between prolog
+and R. Prolog constructs are converted by the library as follows:
+<ul>
+<li><code>..</code> within atoms -&gt; <code>.</code> (ex. <code> as..integer(c(1,2,3)) -&gt; as.integer(c(1,2,3))</code> )</li>
+<li><code>^[]</code> after atoms -&gt; <code>[]</code> (ex. <code>a^[2] -&gt; a[2] </code>)</li>
+<li><code>(.)</code> at the end of atoms that are known R functions -&gt; <code>()</code> (ex. <code>dev..off(.) -&gt; dev.off()</code> )</li>
+<li><code>[]</code> -&gt; c() (which equal to R's NULL value)</li>
+<li>( f(x) :- (..)) -&gt; f(x) (...)</li>
+<li>Lists of lists of numbers are converted to matrices. All first level lists must have the same length.</li>
+<li>Filenames must be given as Prolog strings.</li>
+<li>R specific operators (eg. %*% should be quoted in Prolog.</li>
+<li>expressions that pose difficulty in translation can alwasy be passed as Prolog atoms or strings eg. 'inp$id'</li>
+</ul>
+
+<h2 class="wiki">Data transfers</h2>
+
+<p>
+Following R convension we will talk about the type of and the class of data.
+i, defined by i &lt;- as.integer(c(1,2,3)), is of class integer vector and type integer.
+R vectors are mapped to prolog lists and matrices are mapped to nested lists.
+The convention works the other way around too.
+
+<p>
+There are two ways to pass prolog data to R. The more efficient one is by using
+
+<pre class="code">
+ Rvar &lt;- PLval
+</pre>
+
+<p>
+We will call this the low-level interface. It is implemented as C code and
+transfers via C data between R and Prolog.
+In what follows atomic PLval data are simply considered as singleton lists.
+Flat Plval lists are translated to R vectors and lists of one level of nesting to R matrices (which are 2 dimensional arrays
+in R parlance). The type of values of the vector or matrice is taken to be the type of the first data element of the Plval
+according to the following :
+
+<dl class="termlist">
+<dt class="term">integer-&gt;integer<dd>
+<dt class="term">float-&gt;double<dd>
+<dt class="term">atom-&gt;char<dd>
+<dt class="term">boolean-&gt;logical<dd>
+</dl>
+
+<p>
+Booleans are represented in prolog as true/false atoms.
+Currently arrays of aribtrary dimensions are not supported in the low-level interface. Note that in R a scalar is just a
+one element vector. When passing Prolog objects to R, the user can specify the type of the
+R object by using the (:) operator (see <a href="/doc_for?object=real:real_type/1">real_type/1</a>). For example:
+
+<pre class="code">
+r &lt;- float:[1,2,3].
+&lt;- r.   				% don't be deceived :
+R &lt;- r.
+
+i &lt;- int:[1,2,3].
+&lt;- i.
+I &lt;- i.
+
+</pre>
+
+<p>
+In addition Prolog data can be passed through the expression mechanism. That is, data appearing in an arbitrary
+R expression will be parsed and be part of the long string that will be passed from Prolog to R for evaluation.
+This is only advisable for short data structures. For instance,
+
+<pre class="code">
+     tut_4a :-
+          state &lt;- c("tas", "sa",  "qld", "nsw", "nsw"),
+          &lt;- state.
+</pre>
+
+<p>
+Through this interface it is more convenient to represent R chars by Prolog list of codes, as in the above example.
+
+<h2 class="wiki">Examples</h2>
+
+<pre class="code">
+
+?- e &lt;- numeric.
+yes
+?- e^[3] &lt;- 17.
+yes
+?- Z &lt;- e.
+Z = ['$NaN','$NaN',17.0]
+?- e^[10] &lt;- 12.
+yes
+?- Z &lt;- e.
+Z = ['$NaN','$NaN',17.0,'$NaN','$NaN','$NaN','$NaN','$NaN','$NaN',12.0]
+
+int :-
+     i &lt;- [1,2,3,4], I &lt;- i, write( i(I) ), nl.
+
+bool_back :-
+     t &lt;- [1,2,3,4,5,1], s &lt;- t==1, S &lt;- s, write( s(S) ), nl.
+
+list :-
+     a &lt;- [x=1,y=0,z=3], A &lt;- a, write( 'A'(A) ), nl.
+
+matrix :-
+     a &lt;- [[1,2,3],[4,5,6]], A &lt;- a.
+
+expr1 :-
+     a &lt;- [[1,2,3],[4,5,6]], B &lt;- a*3.
+
+expr2 :-
+     a &lt;- [[1,2,3],[4,5,6]], b &lt;- 3, C &lt;- a*b.
+
+
+use_module( library(apply_macros), [maplist/3] ).
+
+between_1_and( N, Bs ) :-
+     findall( B, between(1,N,B), Bs ).
+
+:- use_module( library(apply_macros), [maplist/3] ).
+
+plot_cpu :-
+     points &lt;- [10,100,500,1000],
+     points &lt;- 'as.integer'(points * 10),
+     &lt;- points,
+     Points &lt;- points,
+     write( points(Points) ), nl,
+     findall( T, (member(P,Points),between_1_and(P,Long),
+                   write( '.' ), flush_output,
+                   statistics( cputime, _) ,
+                   long &lt;- Long, statistics( cputime, [_,SCpu] ),
+                   _Back &lt;- long, statistics( cputime, [_,TCpu] ),
+                   T = SCpu-TCpu
+                 ),
+               Ts
+            ),
+     write( ts(Ts) ), nl,
+     maplist( arg(1), Ts, Push ),
+     write( push(Push) ), nl,
+     maplist( arg(2), Ts, Pull ),
+     write( pull(Pull) ), nl,
+     push &lt;- Push, pull &lt;- Pull,
+     &lt;- plot( points, push, ylab='"push + pull (red)"' ),
+     r_char( red, Red ),
+     &lt;- points( points, pull, col=Red ).
+
+rtest :-
+        y &lt;- rnorm(50),
+        &lt;- y,
+        x &lt;- rnorm(y),
+     &lt;- x11(width=5,height=3.5),
+        &lt;- plot(x,y),
+        write( 'Press Return to continue...' ), nl,
+        read_line_to_codes( user_input, _ ),
+        &lt;- dev..off(.),
+        Y &lt;- y,
+        write( y(Y) ), nl,
+        findall( Zx, between(1,9,Zx), Z ),
+        z &lt;- Z,
+        &lt;- z,
+        cars &lt;- [1, 3, 6, 4, 9],
+        % cars &lt;- c(1, 3, 6, 4, 9),
+        &lt;- pie(cars),
+        write( 'Press Return to continue...' ), nl,
+        read_line_to_codes( user_input, _ ),
+        devoff.
+
+
+tut6 :-
+        d &lt;- outer(0:9, 0:9),
+        fr &lt;- table(outer(d, d, "-")),
+        r(plot(as.numeric(names(fr)), fr, type="h",
+            xlab="Determinant", ylab="Frequency")).
+
+tut4b :-
+     astate &lt;- [tas,sa,qld,nsw,nsw,nt,wa],
+     statef &lt;- factor(state),
+     incmeans &lt;- tapply( c(60, 49, 40, 61, 64, 60, 59, 54), statef, mean ),
+     &lt;- incmeans.
+
+logical :-
+     t &lt;- [1,2,3,4,5,1],
+     s &lt;- t==1,
+     &lt;- s,
+     S &lt;- s,
+     write( s(S) ), nl.
+
+</pre>
+
+<p>
+Note, r..eal is sensitive to the amount of stack made available to Yap. With a generous stack, huge objects
+can be passed between the two systems.
+
+<pre class="code">
+
+κρότος;yapr/sureal% yap -s80000 -f -g "ensure_loaded(library(real))"
+YAP 6.3.0 (x86_64-linux): Fri Nov 11 16:06:00 CET 2011
+MYDDAS version MYDDAS-0.9.1
+?- findall( I, between(1,1000000,I), Is), i &lt;- Is, K &lt;- i, length( K, Len ), write( len(Len) ), nl, fail.
+len(1000000)
+
+</pre>
+
+<h2 class="wiki">Info</h2>
+
+<p>
+We are grateful to Jan Wielemaker for re-setting and improving the whole of the C code.
+Many thanks to the developers of YapR for inspiration and some functions.
+
+<dl class="tags">
+<dt class="keyword-author">author<dd class="keyword-author">- Nicos Angelopoulos<dd class="keyword-author">- Vitor Costa Santos
+<dt class="keyword-version">version<dd class="keyword-version">- 0:0:2, 2011/12/07
+<dt class="keyword-see">See also<dd class="keyword-see">- <code class="nofile">examples/real_ex.pl</code><dd class="keyword-see">- <a href="http://www.r-project.org/">http://www.r-project.org/</a>
+<dt class="keyword-license">license<dd class="keyword-license">- whatever
+</dl>
+
+<dl>
+<dt class="pubdef"><span style="float:right"></span><a name="init_r/0"><b class="pred">init_r</b></a><dd class="defbody">Start an R object. This is done automatically upon loading the library. We should add some checking that none exists here
+before starting a new one. This is currently not the case. 
+<dt class="pubdef"><span style="float:right"></span><a name="end_r/0"><b class="pred">end_r</b></a><dd class="defbody">Stop the R object and close the communication channel. 
+<dt class="pubdef"><span style="float:right"></span><a name="real/2"><b class="pred">real</b><var class="arglist">(Version, Date)</var></a><dd class="defbody"><var>Version</var> and release date.
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="&lt;-/1"><b class="pred">&lt;-</b><var class="arglist">(+Rvar)</var></a>
+<dt class="pubdef"><b class="pred">&lt;-</b><var class="arglist">(+Rexpr)</var><dd class="defbody">
+
+<blockquote>
+If <var>Rvar</var> is an atom and a known R object, then print <var>Rvar</var> on R.
+Else treat the input as an R expression and pass it on R for interpretation. (Throws result away, if expression
+is not a &lt;- expression itself).
+ 
+</blockquote>
+
+<dt class="pubdef"><span style="float:right"></span><a name="&lt;-/2"><b class="pred">&lt;-</b><var class="arglist">(+PLvar, +Rexpr)</var></a>
+<dt class="pubdef"><b class="pred">&lt;-</b><var class="arglist">(+Rexpr1, +Rexpr2)</var>
+<dt class="pubdef"><b class="pred">&lt;-</b><var class="arglist">(+Rvar, +PLval)</var>
+<dt class="pubdef"><b class="pred">&lt;-</b><var class="arglist">(+PLvar, +Rvar)</var><dd class="defbody">Evaluate <var>Rexpr</var> and store its return value to <var>PLvar</var>.
+
+<p>
+Pass <var>Rexpr1</var> &lt;- <var>Rexpr2</var> to R.
+
+<p>
+Pass Prolog value <var>PLval</var> to <var>Rvar</var>. If <var>PLval</var> is a single value, flat list or list of depth 2 use the low-level interface to pass the value to an R variable (see section on data transfer).
+
+<p>
+Place value of <var>Rvar</var> to <var>PLvar</var>.
+
+<p>
+Note that all <var>Rexpr</var>* are first processed as described in the section about syntax before passed to R.
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="r/1"><b class="pred">r</b><var class="arglist">(R)</var></a><dd class="defbody">Nickname for &lt;-(<var>R</var>).
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="r/2"><b class="pred">r</b><var class="arglist">(?L, +R)</var></a><dd class="defbody">Nickname for &lt;-(<var>L</var>,<var>R</var>).
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="is_rvar/1"><b class="pred">is_rvar</b><var class="arglist">(+Rvar)</var></a><dd class="defbody">True if <var>Rvar</var> is an atom and a known variable in the R environment.
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="real_type/1"><b class="pred">real_type</b><var class="arglist">(-Type)</var></a><dd class="defbody">Enumerate or test all Types known to r..eal. These can be used as i &lt;- <var>Type</var>:Values. Eg.
+
+<pre class="code">
+i &lt;- int:[1,2.0,3].
+</pre>
+
+<p>
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="r_char/2"><b class="pred">r_char</b><var class="arglist">(+Atomic, +RcharAtom)</var></a><dd class="defbody">Wrap an atomic value with double quotes so it can pass as an R char type.
+ 
+<dt class="pubdef"><span style="float:right"></span><a name="devoff/0"><b class="pred">devoff</b></a><dd class="defbody">Close the current plot devise without any reporting. Short for &lt;- invisible('dev.off'()'). 
+</dl>
+
+</body>
+</html>

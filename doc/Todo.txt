@@ -1,0 +1,14 @@
+Investigate why plot_cpu/1 needs so much stack.
+Doc entry to the makefile.
+Harmonize atom and strings from prolog to R. Both interfaces should be
+able to cope with both.
+Investigate the x.y notation and see if SWI can cope with it.
+Calling functions natively ? 
+
+We could drop the <- operator even, just hook an exception 
+   handler for predicates that are not there !!!
+
+catch( what(is,there), All, (write(caught(All)),nl) ).
+doesnt; work  ->
+
+defining message/2 and which
