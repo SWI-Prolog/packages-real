@@ -14,13 +14,17 @@ SOLIBS=		real.@SO@
 
 LIBPL=		real.pl
 
-all:		$(SOLIBS)
+all:		@TARGET@
 
+ritf:		$(SOLIBS)
+dummy::
 
 real.@SO@:	$(OBJS)
 		$(LD) $(LDSOFLAGS) -o $@ $(OBJS) $(LIBS) @EXTRA_LIBS_FOR_R@
 
-install:	$(SOLIBS) $(addprefix $(srcdir)/, $(LIBPL))
+install:	install-@TARGET@
+install-dummy::
+install-ritf:	$(SOLIBS) $(addprefix $(srcdir)/, $(LIBPL))
 		mkdir -p $(DESTDIR)$(SOLIBDIR)
 		rm -f $(DESTDIR)$(SOLIBDIR)/real.@SO@
 		$(INSTALL_PROGRAM) $(SOLIBS) $(SOLIBDIR)
@@ -60,7 +64,7 @@ check::
 ################################################################
 
 clean:
-		rm -f $(ZOBJ) *~ *.o *% a.out core config.log
+		rm -f $(SOLIBS) *~ *.o *% a.out core config.log
 
 distclean:	clean
 		rm -f $(TARGETS) config.cache config.h config.status Makefile
