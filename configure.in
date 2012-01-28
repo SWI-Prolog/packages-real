@@ -15,8 +15,8 @@ if test $REXE = none; then
   TARGET="dummy"
 else
   TARGET="ritf"
-  YAPR_INCLUDES="$($REXE CMD config --cppflags)"
-  EXTRA_LIBS_FOR_R="$($REXE CMD config --ldflags)"
+  YAPR_INCLUDES="$($REXE CMD config --cppflags | grep -v ^WARNING)"
+  EXTRA_LIBS_FOR_R="$($REXE CMD config --ldflags | grep -v ^WARNING)"
 fi
 
 AC_OUTPUT(Makefile)
