@@ -53,11 +53,22 @@ uninstall::
 		$(MKINDEX)
 
 ################################################################
+# Documentation
+################################################################
+
+TEXEXTRA=	libreal.tex
+$(TEX):		$(TEXEXTRA)
+
+libreal.tex:	real.pl
+		$(PLTOTEX) --section 'library(real)' --out=$@
+
+
+################################################################
 # Testing
 ################################################################
 
 check::
-		(cd $(srcdir) && $(PL) -q -f test_zlib.pl -g test_zlib,halt -t 'halt(1)' )
+		(cd $(srcdir) && $(PL) -q -f test_real.pl -g test_real,halt -t 'halt(1)' )
 
 ################################################################
 # Clean
