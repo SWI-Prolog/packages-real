@@ -6,7 +6,7 @@
 
 PACKAGE=real
 DOC=real
-PKGCFLAGS=@YAPR_INCLUDES@
+PKGCFLAGS=@REAL_INCLUDES@
 include ../Makefile.defs
 
 OBJS=	real.o
@@ -14,15 +14,15 @@ SOLIBS=		real.@SO@
 
 LIBPL=		real.pl
 
-all:		@TARGET@
+all:		@REAL_TARGET@
 
 ritf:		$(SOLIBS)
 dummy::
 
 real.@SO@:	$(OBJS)
-		$(LD) $(LDSOFLAGS) -o $@ $(OBJS) $(LIBS) @EXTRA_LIBS_FOR_R@
+		$(LD) $(LDSOFLAGS) -o $@ $(OBJS) $(LIBS) @REAL_LIBS@
 
-install:	install-@TARGET@
+install:	install-@REAL_TARGET@
 install-dummy::
 install-ritf:	$(SOLIBS) $(addprefix $(srcdir)/, $(LIBPL))
 		mkdir -p $(DESTDIR)$(SOLIBDIR)

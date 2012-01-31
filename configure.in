@@ -4,19 +4,19 @@ AC_INIT(install-sh)
 AC_PREREQ([2.50])
 AC_CONFIG_HEADER(config.h)
 
-AC_SUBST(YAPR_INCLUDES)
-AC_SUBST(EXTRA_LIBS_FOR_R)
-AC_SUBST(TARGET)
+AC_SUBST(REAL_INCLUDES)
+AC_SUBST(REAL_LIBS)
+AC_SUBST(REAL_TARGET)
 
 m4_include([../ac_swi_c.m4])
 
 AC_CHECK_PROGS(REXE, R, "none")
 if test $REXE = none; then
-  TARGET="dummy"
+  REAL_TARGET="dummy"
 else
-  TARGET="ritf"
-  YAPR_INCLUDES="$($REXE CMD config --cppflags | grep -v ^WARNING)"
-  EXTRA_LIBS_FOR_R="$($REXE CMD config --ldflags | grep -v ^WARNING)"
+  REAL_TARGET="ritf"
+  REAL_INCLUDES="$($REXE CMD config --cppflags | grep -v ^WARNING)"
+  REAL_LIBS="$($REXE CMD config --ldflags | grep -v ^WARNING)"
 fi
 
 AC_OUTPUT(Makefile)
