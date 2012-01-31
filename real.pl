@@ -25,7 +25,7 @@
 	op(400,fx,@)
      ]).
 
-:- use_foreign_library(real).
+:- use_foreign_library(foreign(real)).
 
 :- use_module(library(lists) ).
 :- use_module(library(apply_macros)).
@@ -635,8 +635,8 @@ matrix_el(El, [], Start) -->
 	( { var(Start) } -> ", " ; "" ),
 	rterm_to_string(El).
 
-% hmmmm 
-% originally this (binary/1) included a call to exist, 
+% hmmmm
+% originally this (binary/1) included a call to exist,
 % this rightly fails on lm(speeds~exprs)
 % we are converting this to an operators version and we might
 % need to introduce a top-level version that checks for functions
