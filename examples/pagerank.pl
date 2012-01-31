@@ -1,12 +1,11 @@
-
-:- use_module(library(yapr)).
+:- use_module(library(real)).
 %:-    r(install..packages("igraph")).
 :-  r(library("igraph") ).
 
 aleph :-
     pagerank('aleph.yap').
 
-pagerank(F) :_
+pagerank(F) :-
 %     g <- graph([0,0],n=1000),
      parse(F,S),
       g <- graph(S),
@@ -29,7 +28,7 @@ max_element(_.Els, VM, IM, I0, IF, VF) :-
     I is I0+1,
     max_element(Els, VM, IM, I, IF, VF).
 
-parse(File, L) :- 
+parse(File, L) :-
      open(File, read, S),
      findall(O, process(S, O),L),
      close(S).
@@ -65,7 +64,7 @@ process_body(B, IDA, O) :- !,
 
 :- dynamic ids/1, found/3, exists/2.
 
-new(IDA,IDB) :- 
+new(IDA,IDB) :-
   \+ exists(IDA,IDB),
   assert(exists(IDA,IDB)).
 
