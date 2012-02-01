@@ -1,3 +1,16 @@
+%%% -*- Mode: Prolog; -*-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    Author:        Nicos Angelopoulos, Vitor Santos Costa, Jan Wielemaker
+%    E-mail:        Nicos Angelopoulos <nicos@gmx.co.uk>
+%    Copyright (C): Nicos Angelopoulos, University of Amsterdam, Universidade do% Porto
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  This file is part of r..eal
+%  distributed according to Perl Artistic License
+%  check LICENSE file for distribution license
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 :- module('real', [
      init_r/0,
      end_r/0,
