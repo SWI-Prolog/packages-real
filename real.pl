@@ -2,7 +2,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    Author:        Nicos Angelopoulos, Vitor Santos Costa, Jan Wielemaker
 %    E-mail:        Nicos Angelopoulos <nicos@gmx.co.uk>
-%    Copyright (C): Nicos Angelopoulos, University of Amsterdam, Universidade do% Porto
+%    Copyright (C): Nicos Angelopoulos, VU University Amsterdam,
+%		    Universidade do Porto
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  This file is part of r..eal
