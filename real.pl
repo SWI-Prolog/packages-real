@@ -157,7 +157,7 @@ Through this interface it is more convenient to represent R chars by Prolog list
 
 ==
 
-?- e <- numeric.
+?- e <- numeric(.).
 yes
 ?- e^[3] <- 17.
 yes
