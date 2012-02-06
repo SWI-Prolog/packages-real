@@ -1,5 +1,4 @@
-// does not work under windows.
-//#include <Rembedded.h>
+#include <Rembedded.h>
 #include <R.h>
 #include <Rinternals.h>
 #include <Rdefines.h>

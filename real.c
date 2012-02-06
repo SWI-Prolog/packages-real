@@ -1,6 +1,6 @@
 #include <SWI-Stream.h>
 #include <SWI-Prolog.h>
-//#include <Rembedded.h>
+#include <Rembedded.h>
 #include <R.h>
 #include <Rinternals.h>
 #include <Rdefines.h>
