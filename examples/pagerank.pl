@@ -8,7 +8,7 @@ aleph :-
 pagerank(F) :-
 %     g <- graph([0,0],n=1000),
      parse(F,S),
-      g <- graph(S),
+     g <- graph(S),
      r <- page..rank(g),
      Scores <- 'r$vector',
      max_element(Scores, I, V),
