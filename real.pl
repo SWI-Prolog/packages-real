@@ -276,7 +276,7 @@ We are grateful to Jan Wielemaker for re-setting and improving the whole of the 
 Many thanks to the original YapR developers for inspiration and some functions.
 
 @author		Nicos Angelopoulos
-@author		Vitor Costa Santos
+@author		Vitor Santos Costa
 @version	0:0:3, 2011/12/23
 @license	whatever
 @see		examples/real_ex.pl
@@ -478,7 +478,11 @@ devoff :-
 %%% end of interface predicates
 
 rexpr_codes( Rexpr, Rcodes ) :-
-     atomic( Rexpr ),
+     number( Rexpr ),
+     !,
+     number_codes( Rexpr, Rcodes ).
+rexpr_codes( Rexpr, Rcodes ) :-
+     atom( Rexpr ),
      !,
      atom_codes( Rexpr, Rcodes ).
 rexpr_codes( Rcodes, Rcodes ) :-
@@ -538,11 +542,9 @@ rterm_to_string(A) -->
         rterm_to_string(Head),
 	".",
 	rterm_to_string(Tail).
-/* Deal with this later...
 rterm_to_string(Array) -->
 	{ Array = [_|_] },
 	array_to_c(Array), !.
-     */
 rterm_to_string(A) -->
      { functor(A,Name,1),arg(1,A,'.')}, !,
        add_atom(Name), "()".
