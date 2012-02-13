@@ -39,8 +39,7 @@
 	op(400,fx,@)
      ]).
 
-:- use_foreign_library(foreign(real)).
-
+:- use_module(library(shlib)).
 :- use_module(library(lists) ).
 :- use_module(library(apply_macros)).
 
@@ -342,9 +341,14 @@ install_in_osx :-
 %%	init_r.
 %	Start an R object. This is done automatically upon loading the library. We should add some checking that none exists here
 %    before starting a new one. This is currently not the case.
+start_r :-
+	init_r_env,
+	use_foreign_library(foreign(real)),
+	init_r.
 
 %%	end_r.
 %	Stop the R object and close the communication channel.
+end_r.
 
 %% real( Version,  Date ).
 %          Version and release date.
@@ -669,4 +673,5 @@ binary_op_associativity( xfx ).
 boolean_atom( true ).
 boolean_atom( false ).
 
-:- initialization(init_r).
+% make sure we do everything within the yapr module.
+:- initialization(start_r, now).
