@@ -411,6 +411,10 @@ r( Plvar, RvarIn ) :-
      !,
      robj_to_pl_term( Rvar, Plvar ).
 
+r( LRexpr, RRexpr ) :-
+	atom(LRexpr),
+	cvec(RRexpr), !,
+	send_c_vector(RRexpr, LRexpr).
 r( RvarIn, PlrExpr ) :-
      rvar_identifier( RvarIn, Rvar ),
      !,
@@ -424,7 +428,7 @@ r( LRexpr, RRexpr ) :-
      catch( rexpr_codes('<-'(LRexpr,RRexpr),Rcodes),_,fail),
      !,
      atom_codes( Ratom, Rcodes ),
-     write( sending(Ratom) ), nl,
+%     write( sending(Ratom) ), nl,
      send_r_command( Rcodes ).
 r( _Plvar, _Rexpr ) :-
      write( user_error, 'Cannot decipher modality of <-/2. \n ' ), nl,
@@ -514,11 +518,11 @@ rvar_identifier( Rvar, Rvar ) :-
 rvar_identifier( A..B, Atom ) :-
      atom(A), atom(B),
      atomic_list_concat( [A,'.',B], Atom ).
-/* fixme:
+/* fixme
 rvar_identifier( A^B ) :-
      % write( a(A)-b(B) ),
      is_list( B ).
-     */
+*/
 
 
 val_type_real( int, 1 ).
@@ -675,5 +679,19 @@ binary_op_associativity( xfx ).
 boolean_atom( true ).
 boolean_atom( false ).
 
+cvec(RTerm) :-
+	functor(RTerm, c, Arity),
+	check_cvec(Arity, RTerm).
+
+% done, it is ok.
+check_cvec(0, _RTerm) :- !.
+% start from the bottom because it is most likely to have problems.
+check_cvec(I, RTerm) :-
+	arg(I, RTerm, A),
+	float(A),
+	I1 is I-1,
+	check_cvec(I1, RTerm).
+
 % make sure we do everything within the yapr module.
 :- initialization(start_r, now).
+
