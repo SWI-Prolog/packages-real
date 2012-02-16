@@ -346,10 +346,6 @@ start_r :-
 	use_foreign_library(foreign(real)),
 	init_r.
 
-%%	end_r.
-%	Stop the R object and close the communication channel.
-end_r.
-
 %% real( Version,  Date ).
 %          Version and release date.
 %
