@@ -427,8 +427,6 @@ r( Plvar, Rexpr ) :-
 r( LRexpr, RRexpr ) :-
      catch( rexpr_codes('<-'(LRexpr,RRexpr),Rcodes),_,fail),
      !,
-     atom_codes( Ratom, Rcodes ),
-%     write( sending(Ratom) ), nl,
      send_r_command( Rcodes ).
 r( _Plvar, _Rexpr ) :-
      write( user_error, 'Cannot decipher modality of <-/2. \n ' ), nl,
