@@ -1,6 +1,5 @@
 
-% :- ensure_loaded( library(real) ).
-:- ensure_loaded( real ).
+:- ensure_loaded( library(real) ).
 :- ensure_loaded( library(lists) ).
 :- use_module( library(apply_macros) ).
 :- use_module( library(readutil) ).
@@ -17,6 +16,14 @@ float :-
      f <- [1.0,2,3,4],
      F <- f,
      write( f(F) ), nl.
+
+to_float :-
+     m <- [1,2,3,4.0],
+     M1 <- m,
+     write( m(M1) ), nl,
+     m <- [1,2,3,4.1],
+     M2 <- m,
+     write( m(M2) ), nl.
 
 bool :- 
      b <- [true,false,true,true],
@@ -36,13 +43,6 @@ bool_back :-
 mix_vector(Z) :-
    z <- [1.2,2,3],
    Z <- z.
-
-between_1_and(N,X) :-
-     ( var(N) -> N is 100; true ),
-     IntN is integer(N),
-     findall( I, between(1,IntN,I), Is ),
-     i <- Is,
-     X <- i.
 
 char :- 
      f <- [a,b,c],
@@ -120,7 +120,7 @@ dot_in_rvars :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
-     <- print('a..b').  % this fails, i guess this is ok...
+     <- print('a..b').  % produces an error, as it should
 
 semi_column :- 
      z <- 1:50,
@@ -133,6 +133,14 @@ empty_args :-
      findall( I, (between(1,6,I),write('.'), flush_output, sleep(1)), _ ),
      nl,
      <- dev..off(.).
+
+% auxiliary,
+between_1_and(N,X) :-
+     ( var(N) -> N is 100; true ),
+     IntN is integer(N),
+     findall( I, between(1,IntN,I), Is ),
+     i <- Is,
+     X <- i.
 
 cpu( R ) :-
      ( var(R) -> R is 10000; true ),
@@ -170,6 +178,7 @@ plot_cpu( Factor ) :-
      r_char( red, Red ),
      <- points( points, push, col=Red ).
 
+% auxiliary,
 cpu_points( [], [], [] ).
 cpu_points( [H|T], [S|Ss], [L|Ls] ) :-
      between_1_and(H,Long),
@@ -212,7 +221,7 @@ rtest :-
 	read_line_to_codes( user_input, _ ),
 	devoff.
 
-% from YapR
+% adapted from YapR
 
 % Intrinsic attributes: mode and length
 tut1 :-

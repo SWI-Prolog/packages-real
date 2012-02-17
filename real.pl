@@ -2,8 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    Author:        Nicos Angelopoulos, Vitor Santos Costa, Jan Wielemaker
 %    E-mail:        Nicos Angelopoulos <nicos@gmx.co.uk>
-%    Copyright (C): Nicos Angelopoulos, VU University Amsterdam,
-%		    Universidade do Porto
+%    Copyright (C): Nicos Angelopoulos, Universidade do Porto, VU University Amsterdam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  This file is part of r..eal
@@ -25,7 +24,7 @@
      real/2,
      r_char/2,
      devoff/0,
-	real_type/1,
+	% real_type/1,
 	(<-)/2,
 	op(600,xfy,~),
 	op(600,xfy,'..'),
@@ -102,7 +101,7 @@ and R. Prolog constructs are converted by the library as follows:
 
 ---++ Data transfers
 
-Following R convension we will talk about the type of and the class of data.
+Following R convension we will talk about the type-of and the class-of data.
 i, defined by i <- as.integer(c(1,2,3)), is of class integer vector and type integer.
 R vectors are mapped to prolog lists and matrices are mapped to nested lists.
 The convention works the other way around too.
@@ -112,8 +111,7 @@ There are two ways to pass prolog data to R. The more efficient one is by using
  Rvar <- PLval
 ==
 
-We will call this the low-level interface. It is implemented as C code and
-transfers via C data between R and Prolog.
+We will call this the low-level interface. It is implemented as C code and transfers via C data between R and Prolog.
 In what follows atomic PLval data are simply considered as singleton lists.
 Flat Plval lists are translated to R vectors and lists of one level of nesting to R matrices (which are 2 dimensional arrays
 in R parlance). The type of values of the vector or matrice is taken to be the type of the first data element of the Plval
@@ -126,17 +124,40 @@ according to the following :
 
 Booleans are represented in prolog as true/false atoms.
 Currently arrays of aribtrary dimensions are not supported in the low-level interface. Note that in R a scalar is just a
-one element vector.  When passing Prolog objects to R, the user can specify the type of the
-R object by using the (:) operator (see real_type/1). For example:
+one element vector.  When passing non-scalars the interface will assume the type of the object is that of the first scalar 
+until it encounters something different. R..eal will currently will re-start and repopulate partial integers for floats as follows: 
 
 ==
-r <- float:[1,2,3].
-<- r.					% don't be deceived :
+r <- [1,2,3].
 R <- r.
+R = [1, 2, 3].
 
-i <- int:[1,2,3].
-<- i.
+i <- [1,2,3.1].
 I <- i.
+I = [1.0, 2.0, 3.1].
+
+
+==
+
+However, not all possible "corrections" are currently supported. For instance, 
+
+==
+?- c <- [a,b,c,1].
+ERROR: real:set_r_variable/2: Type error: `boolean' expected, found `a'
+==
+
+In the low level interface we map prolog atoms to R strings-
+
+==
+?- x <- [abc,def].
+true.
+
+?- <- x.
+[1] "abc" "def"
+true.
+
+?- X <- x.
+X = [abc, def].
 
 ==
 
@@ -185,35 +206,6 @@ expr1 :-
 expr2 :-
      a <- [[1,2,3],[4,5,6]], b <- 3, C <- a*b.
 
-
-between_1_and( N, Bs ) :-
-     findall( B, between(1,N,B), Bs ).
-
-plot_cpu :-
-     points <- [10,100,500,1000],
-     points <- 'as.integer'(points * 10),
-     <- points,
-     Points <- points,
-     write( points(Points) ), nl,
-     findall( T, (member(P,Points),between_1_and(P,Long),
-                   write( '.' ), flush_output,
-                   statistics( cputime, _) ,
-                   long <- Long, statistics( cputime, [_,SCpu] ),
-                   _Back <- long, statistics( cputime, [_,TCpu] ),
-                   T = SCpu-TCpu
-                 ),
-               Ts
-            ),
-     write( ts(Ts) ), nl,
-     maplist( arg(1), Ts, Push ),
-     write( push(Push) ), nl,
-     maplist( arg(2), Ts, Pull ),
-     write( pull(Pull) ), nl,
-     push <- Push, pull <- Pull,
-     <- plot( points, push, ylab='"push + pull (red)"' ),
-     r_char( red, Red ),
-     <- points( points, pull, col=Red ).
-
 rtest :-
 	y <- rnorm(50),
 	<- y,
@@ -230,7 +222,6 @@ rtest :-
 	<- z,
 	cars <- [1, 3, 6, 4, 9],
 	% cars <- c(1, 3, 6, 4, 9),
-	<- pie(cars),
 	write( 'Press Return to continue...' ), nl,
 	read_line_to_codes( user_input, _ ),
 	devoff.
@@ -239,13 +230,12 @@ rtest :-
 tut6 :-
 	d <- outer(0:9, 0:9),
 	fr <- table(outer(d, d, "-")),
-	r(plot(as.numeric(names(fr)), fr, type="h",
-            xlab="Determinant", ylab="Frequency")).
+	<- plot(as..numeric(names(fr)), fr, type="h", xlab="Determinant", ylab="Frequency").
 
 tut4b :-
-     astate <- [tas,sa,qld,nsw,nsw,nt,wa],
+     state <- [tas,sa,qld,nsw,nsw,nt,wa],
      statef <- factor(state),
-     incmeans <- tapply( c(60, 49, 40, 61, 64, 60, 59, 54), statef, mean ),
+     incmeans <- tapply( c(60, 49, 40, 61, 64, 60, 59), statef, mean ),
      <- incmeans.
 
 logical :-
@@ -272,14 +262,15 @@ len(1000000)
 
 ---++ Info
 
-We are grateful to Jan Wielemaker for re-setting and improving the whole of the C code.
 Many thanks to the original YapR developers for inspiration and some functions.
 
 @author		Nicos Angelopoulos
 @author		Vitor Santos Costa
-@version	0:0:3, 2011/12/23
-@license	whatever
+@author		Jan Wielemaker
+@version	0:0:4, 2012/02/17
+@license	Perl Artistic License
 @see		examples/real_ex.pl
+@see		examples/real/
 @see		http://www.r-project.org/
 
 */
@@ -349,7 +340,7 @@ start_r :-
 %% real( Version,  Date ).
 %          Version and release date.
 %
-real( 0:0:3, 2011/12/22 ).
+real( 0:0:4, 2012/02/17 ).
 
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
@@ -450,6 +441,7 @@ is_rvar( RvarIn, Rvar ) :-
      RvarModes  = [character,complex,list,logical,'NULL',numeric,raw],
      memberchk( Plmode, RvarModes ).
 
+/*
 %% real_type( -Type ).
 %  Enumerate or test all Types known to r..eal. These can be used as i <- Type:Values. Eg.
 %  ==
@@ -458,6 +450,7 @@ is_rvar( RvarIn, Rvar ) :-
 %
 real_type( Type ) :-
 	val_type_real( Type, _ ).
+     */
 
 %%	r_char( +Atomic, +RcharAtom ).
 %   Wrap an atomic value with double quotes so it can pass as an R char type.
@@ -686,6 +679,4 @@ check_cvec(I, RTerm) :-
 	I1 is I-1,
 	check_cvec(I1, RTerm).
 
-% make sure we do everything within the yapr module.
 :- initialization(start_r, now).
-
