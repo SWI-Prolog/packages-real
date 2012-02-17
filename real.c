@@ -773,7 +773,7 @@ put_sexp(term_t t, SEXP s)
 static foreign_t
 init_R(void)
 { int argc = 2;
-  char * argv[] = {"R", "--silent"};
+  char * argv[] = {"R", "--slave","--vanilla"};
 
   Rf_initEmbeddedR(argc, argv);
   return TRUE;
