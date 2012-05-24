@@ -565,9 +565,10 @@ rterm_to_string((A1 :- A2)) -->
 	rterm_to_string(A2).
 rterm_to_string(S) -->
 	{ functor(S, Na, 2), binary(Na), atom_codes(Na,NaS), arg(1,S,A1), arg(2,S,A2) }, !,
-	rterm_to_string(A1),
+     { ( (Na=(<-);Na=(=)) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
+     Lft, rterm_to_string(A1),
 	" ", NaS, " ",
-	rterm_to_string(A2).
+	rterm_to_string(A2), Rgt.
 rterm_to_string(S) -->
 	{ S =.. [F|Args], F \== '.' },
 	add_atom(F),

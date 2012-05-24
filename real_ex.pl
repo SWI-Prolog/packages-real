@@ -30,7 +30,7 @@ bool :-
      B <- b,
      write( b(B) ), nl.
 
-bool_e :- 
+bool_e :-    % generates error
      b <- [true,false,true,true,other].
 
 bool_back :- 
@@ -64,12 +64,12 @@ list :-
      A <- a,
      write( a(A) ), nl.
 
-list_ea :-
+list_ea :-  % produces error
      a <- [x=1,y=0,z-3],
      A <- a,
      write( a(A) ), nl.
 
-list_eb :-
+list_eb :- % produces error
      a <- [x=1,y=0,=(z,3,4)],
      A <- a,
      write( a(A) ), nl.
@@ -134,6 +134,18 @@ empty_args :-
      nl,
      <- dev..off(.).
 
+%% thanks to Michiel Hildebrand 
+%
+binary_op :-
+     v1 <- c(1,1),
+     v2 <- c(1,-1),
+     P <- (v1-v2)^2,
+     write( P ), nl.
+     % not !!! : P = [0.0, 0.0].
+
+plot_cpu :-
+     plot_cpu( 10 ).
+
 % auxiliary,
 between_1_and(N,X) :-
      ( var(N) -> N is 100; true ),
@@ -153,9 +165,6 @@ cpu( R ) :-
      write( cputime_to_pull(Cpu2) ), nl,
      length( X, Len ),
      write( len(Len) ), nl.
-
-plot_cpu :-
-     plot_cpu( 10 ).
 
 plot_cpu( Factor ) :-
      nl,
@@ -177,25 +186,6 @@ plot_cpu( Factor ) :-
      <- plot( points, pull, ylab ='"pull + push (red) - in seconds"' ),
      r_char( red, Red ),
      <- points( points, push, col=Red ).
-
-% auxiliary,
-cpu_points( [], [], [] ).
-cpu_points( [H|T], [S|Ss], [L|Ls] ) :-
-     between_1_and(H,Long),
-     statistics( cputime, _) , 
-     length( Long, Lengtho ), write( leno(Lengtho) ), nl,
-     statistics( cputime, S ), 
-     % statistics( cputime, [_,S] ), 
-     long <- Long,
-     Back <- long,
-     Back = [Hb|_],
-     Hb =:= 1,
-     statistics( cputime, L ), 
-     % statistics( cputime, [_,L] ), 
-     length( Back, BackLen ),
-     write( back_len(BackLen) ), nl,
-     % L = 0,
-     cpu_points( T, Ss, Ls ).
 
 % from r_session, 
 %
@@ -305,3 +295,21 @@ tut6 :-
 	r(plot(as..numeric(names(fr)), fr, type="h", xlab="Determinant", ylab="Frequency")),
      nl, write( '   type query: ``devoff.\'\' to close the plot display ' ), nl, nl.
 
+% auxiliary,
+cpu_points( [], [], [] ).
+cpu_points( [H|T], [S|Ss], [L|Ls] ) :-
+     between_1_and(H,Long),
+     statistics( cputime, _) , 
+     length( Long, Lengtho ), write( leno(Lengtho) ), nl,
+     statistics( cputime, S ), 
+     % statistics( cputime, [_,S] ), 
+     long <- Long,
+     Back <- long,
+     Back = [Hb|_],
+     Hb =:= 1,
+     statistics( cputime, L ), 
+     % statistics( cputime, [_,L] ), 
+     length( Back, BackLen ),
+     write( back_len(BackLen) ), nl,
+     % L = 0,
+     cpu_points( T, Ss, Ls ).
