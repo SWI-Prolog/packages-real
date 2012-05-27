@@ -3,6 +3,7 @@
 #include <Rembedded.h>
 #include <R.h>
 #include <Rinternals.h>
+#include <Rinterface.h>
 #include <Rdefines.h>
 #include <R_ext/Parse.h>
 #include <assert.h>
@@ -63,7 +64,7 @@ REAL_term_type( term_t t )
         }
         break;
       case PL_TERM:
-         { 
+         {
             if ( !PL_is_functor(t, FUNCTOR_boolop1) )
 	            return PL_TERM;
 	            // return PL_type_error("R-term (in type)", t);
@@ -76,7 +77,7 @@ REAL_term_type( term_t t )
 
            if ( ! PL_get_atom(arg1,&a) )
 	            return PL_type_error("R-term (in type, 3)", t);
-               
+
            if ( a == ATOM_true || a == ATOM_false )
               return PL_ATOM;
             else
@@ -216,7 +217,7 @@ char_vector_sexp(term_t t, size_t len, SEXP *ansP)
     } else
 	     return FALSE;
   }
-  
+
   UNPROTECT(nprotect);
   *ansP = ans;
 
@@ -305,7 +306,7 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
       case PL_STRING:
 	PROTECT(ans = allocMatrix(STRSXP, len, headlen));
         break;
-      case PL_BOOL: 
+      case PL_BOOL:
 	PROTECT(ans = allocMatrix(LGLSXP, len, headlen));
         break;
       case PL_TERM:
@@ -341,7 +342,7 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
              return matrix_sexp(t, head, len, objtype,  ansP);
            default:
 	          return FALSE;
-               
+
          }
 	    }
 	  }
@@ -373,10 +374,10 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
 
            if ( !PL_get_arg(1, cell, arg1) )
 	          return PL_type_error("R-term (in type, 2)", cell);
-  
+
            if ( ! PL_get_atom(arg1,&a) )
 	          return PL_type_error("R-term (in type, 3)", cell);
-  
+
            if (a == ATOM_true)
 	          CHARACTER_DATA(ans)[index] = mkChar("true");
              else
@@ -384,7 +385,7 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
 	              CHARACTER_DATA(ans)[index] = mkChar("false");
                else
                  return PL_type_error("atom or codes", cell);
-  
+
          } else
 	        return FALSE;
 	    }
@@ -430,9 +431,9 @@ pl_sexp(term_t t, SEXP *ansP)
     case PL_STRING:
     { char *s;
       size_t len;
-      
+
       if ( PL_is_functor(t, FUNCTOR_boolop1) )
-      { 
+      {
         if ( !PL_get_arg(1, t, t) ) return PL_type_error("R-term (in pl_sexp, 9)", t);
       }
 
@@ -469,16 +470,16 @@ pl_sexp(term_t t, SEXP *ansP)
     }
 	 case PL_BOOL:
      {  int val;
-        if ( PL_get_bool_ex(t, &val) ) 
+        if ( PL_get_bool_ex(t, &val) )
         { PROTECT(ans = NEW_LOGICAL(1));
-          nprotect++; LOGICAL_DATA(ans)[0] = val; 
+          nprotect++; LOGICAL_DATA(ans)[0] = val;
         }
      break;
      }
     case PL_TERM:
-    { 
+    {
       if ( PL_is_functor(t, FUNCTOR_dot2) )
-      { term_t head = PL_new_term_ref() ; 
+      { term_t head = PL_new_term_ref() ;
 	size_t len = list_length(t);
 
 	if ( len == (size_t)-1 )
@@ -514,18 +515,18 @@ pl_sexp(term_t t, SEXP *ansP)
        break;
 	  default:
 	    assert(0);
-   } 
+   }
       } else if ( !PL_is_functor(t, FUNCTOR_boolop1) )
       { term_t arg1 = PL_new_term_ref();
          atom_t a;
 
           if ( !PL_get_arg(1, t, arg1) ) return PL_type_error("R-term (in pl_sexp, 2)", t);
           if ( !PL_get_atom(arg1,&a) ) return PL_type_error("R-term (in pl_sexp, 3)", t);
-	      
+
           return char_vector_sexp(arg1, 1, ansP);
-        } else 
+        } else
       { return PL_type_error("R-terma", t);
-      } 
+      }
 
       break;
 	}
@@ -775,6 +776,7 @@ init_R(void)
 { int argc = 2;
   char * argv[] = {"R", "--slave","--vanilla"};
 
+  R_SignalHandlers=0;
   Rf_initEmbeddedR(argc, argv);
   return TRUE;
 }
@@ -849,7 +851,7 @@ send_c_vector(term_t tvec, term_t tout)
     return FALSE;
   vec = REAL(ans);
   for (i = 0; i < arity; i++) {
-    PL_get_arg(i+1, tvec, targ);
+    _PL_get_arg(i+1, tvec, targ);
     if (!PL_get_float(targ, vec+i))
       return FALSE;
   }
@@ -917,10 +919,10 @@ set_r_variable(term_t rvar, term_t value)
 
   if ( PL_get_nchars(rvar, &len, &vname, CVT_ALL|CVT_EXCEPTION) &&
        pl_sexp(value, &sexp) )
-  { 
+  {
     defineVar(Rf_install(vname), sexp, R_GlobalEnv);
     // UNPROTECT(1);				/* FIXME: Dubious */
-      
+
     return TRUE;
   }
 
