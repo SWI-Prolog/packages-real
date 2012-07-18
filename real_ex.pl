@@ -146,46 +146,16 @@ binary_op :-
 plot_cpu :-
      plot_cpu( 10 ).
 
-% auxiliary,
-between_1_and(N,X) :-
-     ( var(N) -> N is 100; true ),
-     IntN is integer(N),
-     findall( I, between(1,IntN,I), Is ),
-     i <- Is,
-     X <- i.
-
-cpu( R ) :-
-     ( var(R) -> R is 10000; true ),
-     findall( F, between_1_and(R,F), Fs ),
-     f <- Fs, 
-     statistics( cputime,  Cpu1 ),
-     write( cputime_to_push(Cpu1) ), nl,
-     X <- f,   % when   F <- f   the predicate fails midway for large Len !!!
-     statistics( cputime,  Cpu2 ),
-     write( cputime_to_pull(Cpu2) ), nl,
-     length( X, Len ),
-     write( len(Len) ), nl.
-
-plot_cpu( Factor ) :-
-     nl,
-     ( Factor > 10 ->
-         M='if your set-up fails on this test increase the size of stack.',
-         write( M ), nl, nl 
-          ;
-          true
-     ),
-     points <- [10,100,500,1000],
-     points <- as..integer( points * Factor ),
-     <- points,
-     Points <- points,
-     write( points(Points) ), nl,
-     cpu_points( Points, Push, Pull ), 
-     push <- Push,
-     pull <- Pull,
-     write( plotting(Pull,Push) ), nl,
-     <- plot( points, pull, ylab ='"pull + push (red) - in seconds"' ),
-     r_char( red, Red ),
-     <- points( points, push, col=Red ).
+list_args :-
+     findall( I, between(1,10000000,I), List ),
+     statistics( cputime, Cpu1 ), write( cpu_1(Cpu1) ), nl,
+     l <- List,
+     a <- median( l ),
+     statistics( cputime, Cpu2 ), write( cpu_2(Cpu2) ), nl,
+     b <- median( List ),
+     statistics( cputime, Cpu3 ), write( cpu_3(Cpu3) ), nl,
+     <- a,
+     <- b.
 
 % from r_session, 
 %
@@ -196,8 +166,7 @@ rtest :-
 	x <- rnorm(y),
      <- x11(width=5,height=3.5),
 	<- plot(x,y),
-	write( 'Press Return to continue...' ), nl,
-	read_line_to_codes( user_input, _ ),
+     r_wait,
 	<- dev..off(.),
 	Y <- y,
 	write( y(Y) ), nl,
@@ -207,8 +176,7 @@ rtest :-
 	cars <- [1, 3, 6, 4, 9],
 	% cars <- c(1, 3, 6, 4, 9),
 	<- pie(cars),
-	write( 'Press Return to continue...' ), nl,
-	read_line_to_codes( user_input, _ ),
+     r_wait,
 	devoff.
 
 % adapted from YapR
@@ -313,3 +281,42 @@ cpu_points( [H|T], [S|Ss], [L|Ls] ) :-
      write( back_len(BackLen) ), nl,
      % L = 0,
      cpu_points( T, Ss, Ls ).
+
+% auxiliary,
+between_1_and(N,X) :-
+     ( var(N) -> N is 100; true ),
+     IntN is integer(N),
+     findall( I, between(1,IntN,I), Is ),
+     i <- Is,
+     X <- i.
+cpu( R ) :-
+     ( var(R) -> R is 10000; true ),
+     findall( F, between_1_and(R,F), Fs ),
+     f <- Fs, 
+     statistics( cputime,  Cpu1 ),
+     write( cputime_to_push(Cpu1) ), nl,
+     X <- f,   % when   F <- f   the predicate fails midway for large Len !!!
+     statistics( cputime,  Cpu2 ),
+     write( cputime_to_pull(Cpu2) ), nl,
+     length( X, Len ),
+     write( len(Len) ), nl.
+plot_cpu( Factor ) :-
+     nl,
+     ( Factor > 10 ->
+         M='if your set-up fails on this test increase the size of stack.',
+         write( M ), nl, nl 
+          ;
+          true
+     ),
+     points <- [10,100,500,1000],
+     points <- as..integer( points * Factor ),
+     <- points,
+     Points <- points,
+     write( points(Points) ), nl,
+     cpu_points( Points, Push, Pull ), 
+     push <- Push,
+     pull <- Pull,
+     write( plotting(Pull,Push) ), nl,
+     <- plot( points, pull, ylab ='"pull + push (red) - in seconds"' ),
+     r_char( red, Red ),
+     <- points( points, push, col=Red ).

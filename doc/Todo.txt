@@ -1,3 +1,6 @@
+
+Close connection at halt (any change of at_halt/1 Vitor ?!!).
+
 Investigate why plot_cpu/1 needs so much stack.
 Doc entry to the makefile.
 Harmonize atom and strings from prolog to R. Both interfaces should be

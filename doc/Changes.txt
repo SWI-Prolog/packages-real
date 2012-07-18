@@ -1,6 +1,15 @@
+0:0:5       2012 July
+   In readme.txt autoconfig -> autoconf.
+   Support $ as term. 
+   Expand the cases understood as printable to include ^ and $.
+   Added r_wait/0.
 
-0:0:3
-   Complete re-writing of the C-code for SWI interface.
+0:0:4       2012 May 24
+   Fixed translation of P <- (v1-v2)^2, (report: Michiel Hildebrand)
+   Added a (v1-v2)^2 example to real_ex.pl .
+
+0:0:3       2012 Feb ??
+   Complete re-writing of the C-code for SWI interface. (80% done by Jan Wielimeker.)
    Added examples/pagerank.pl (Vitor Santos Costa).
 
 0:0:2       2011 Dec ??
