@@ -1,4 +1,7 @@
-0:0:5       2012 July
+0:0:6
+   Fixed '  x <- list(.),  x$a <- 3.  '. Added to examples (composite_list).
+
+0:0:5       2012 July 18
    In readme.txt autoconfig -> autoconf.
    Support $ as term. 
    Expand the cases understood as printable to include ^ and $.

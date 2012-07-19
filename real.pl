@@ -415,9 +415,9 @@ r( LRexpr, RRexpr ) :-
 	cvec(RRexpr), !,
 	send_c_vector(RRexpr, LRexpr).
 r( RvarIn, PlrExpr ) :-
-     rvar_identifier( RvarIn, Rvar ),
+     rvar_identifier( RvarIn, _Rvar ),
      !,
-     assignment( PlrExpr, Rvar ).
+     assignment( PlrExpr, RvarIn ).
 r( Plvar, Rexpr ) :-
      var(Plvar),
      rexpr_codes( Rexpr, Rcodes, TmpRs ),
@@ -498,6 +498,8 @@ rexpr_codes( Rterm, Rcodes, TmpRs ) :-
      rterm_to_string( Rterm, TmpRs, Rcodes, [] ).
 
 assignment( PlData, Rvar ) :-
+     atom( Rvar ),  % fixme a$b <- 3 won't work with set_r_variable/2.
+                    % if atom/1 is removed. now we depend on extra R variables
      ( number(PlData); PlData=[_|_]; boolean_atom(PlData); PlData = @_),
      !,
      set_r_variable(Rvar, PlData).

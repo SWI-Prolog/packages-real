@@ -86,6 +86,14 @@ mix_list :-
      <- print(a),
      write( a(A) ), nl.
 
+composite_list :-
+     x <- [a=1,b=2],
+     x$c <- [3,4], 
+     <- x,    % print   =   $a 3
+     X <- x,
+     write( 'X'(X) ), nl.   % X = [a=3.0].
+     
+
 singleton :- 
      s <- 3,
      S <- s,
