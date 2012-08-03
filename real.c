@@ -3,7 +3,10 @@
 #include <Rembedded.h>
 #include <R.h>
 #include <Rinternals.h>
+#if HAVE_RINTERFACE_H || !defined(_YAP_NOT_INSTALLED)
 #include <Rinterface.h>
+#define R_SIGNAL_HANDLERS 1
+#endif
 #include <Rdefines.h>
 #include <R_ext/Parse.h>
 #include <assert.h>
@@ -776,7 +779,9 @@ init_R(void)
 { int argc = 2;
   char * argv[] = {"R", "--slave","--vanilla"};
 
+#if R_SIGNAL_HANDLERS
   R_SignalHandlers=0;
+#endif
   Rf_initEmbeddedR(argc, argv);
   return TRUE;
 }
