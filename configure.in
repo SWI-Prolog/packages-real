@@ -17,6 +17,16 @@ else
   REAL_TARGET="ritf"
   REAL_INCLUDES="$($REXE CMD config --cppflags | grep -v ^WARNING)"
   REAL_LIBS="$($REXE CMD config --ldflags | grep -v ^WARNING)"
+
+  ocppflags="$CPPFLAGS"
+  ocflags="$CFLAGS"
+  CPPFLAGS+=" $REAL_INCLUDES"
+  CFLAGS+=" $REAL_INCLUDES"
+
+  AC_CHECK_HEADERS(Rinterface.h)
+
+  CFLAGS="$ocflags"
+  CPPFLAGS="$ocppflags"
 fi
 
 AC_OUTPUT(Makefile)
