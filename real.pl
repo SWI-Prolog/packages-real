@@ -58,8 +58,7 @@ the c-interfaces of SWI/Yap and R to pass objects in both directions.
 The usual mode of operation is to load Prolog values on to R variables and then call
 an R function on these values. The return value of the called function can be either placed
 on R variable or passed back to Prolog.  It has been tested extensively on current
-SWI and YAP on Linux machines but it should also compile and work on 
-MS operating systems and Macs.
+SWI and YAP on Linux machines but it should also compile and work on MS operating systems and Macs.
 
 The main modes for utilising the interface are
 ==
@@ -273,7 +272,7 @@ Many thanks to the original YapR developers for inspiration and some functions.
 @author		Nicos Angelopoulos
 @author		Vitor Santos Costa
 @author		Jan Wielemaker
-@version	0:0:4, 2012/02/17
+@version	0:0:5, 2012/09/12
 @license	Perl Artistic License
 @see		examples/real_ex.pl
 @see		examples/real/
@@ -347,7 +346,7 @@ start_r :-
 %% real( Version,  Date ).
 %          Version and release date.
 %
-real( 0:0:5, 2012/07/18 ).
+real( 0:0:5, 2012/09/12 ).
 
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
@@ -594,30 +593,30 @@ rterms_to_string([Arg|Args], First, TmpRs) -->
 
 indices_to_string( List ) -->
 	"[",
-	index_to_string( List, true ),
+	index_to_string( List ),
 	"]".
 
-index_to_string( [], _ ) --> [].
-index_to_string( [H|T], First ) --> 
+index_to_string( [] ) --> [].
+index_to_string( [H|T] ) --> 
      index_element_to_string( H ),
-     index_comma( First, T ),
-     index_to_string( T, false ).
+     index_comma( T ),
+     index_to_string( T ).
 
+index_element_to_string( * ) -->
+     [].
 index_element_to_string( List ) -->
      { is_list(List) },
      !,
      indices_to_string( List ).
+     
 index_element_to_string( Num ) -->
      { write_to_chars(Num,Codes) },
      Codes.
 
-index_comma( _, [] ) --> !, [].
-
-index_comma( false, _ ) -->
+index_comma( [] ) --> !, [].
+index_comma( _ ) -->
      !,
      ",".
-index_comma( true, [] )  --> [].
-
 
 ascii_string([]).
 ascii_string(.(C,Cs)) :-
