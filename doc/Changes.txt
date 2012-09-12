@@ -1,4 +1,6 @@
 0:0:5       2012 September 12
+   ?fixed?  * in array indicators (tut5) broken (why ?).
+   Moved real_ex.pl to examples/for_real.pl
    Fixed '  x <- list(.),  x$a <- 3.  '. Added to examples (composite_list).
    In readme.txt autoconfig -> autoconf.
    Support $ as term. 
