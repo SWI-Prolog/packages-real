@@ -1,0 +1,2 @@
+On MacOs the macports binary seems not to be working properly (eg median()). (Michiel Hildebrand, May 2012). The issue does not persist for MacOS binaries (i assume) from R.
+
