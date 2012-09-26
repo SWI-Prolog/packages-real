@@ -20,7 +20,7 @@ ritf:		$(SOLIBS)
 dummy::
 
 real.@SO@:	$(OBJS)
-		$(LD) $(LDSOFLAGS) -o $@ $(OBJS) $(LIBS) @REAL_LIBS@
+		$(LD) $(LDSOFLAGS) -o $@ $(OBJS) $(LIBS) @REAL_LIBS@ $(LIBPLSO)
 
 install:	install-@REAL_TARGET@
 install-dummy::
