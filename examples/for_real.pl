@@ -4,19 +4,34 @@
 :- use_module( library(apply_macros) ).
 :- use_module( library(readutil) ).
 
+%% for_real.
+%
+%  Some examples illustrating usage of the r..eal library.
 
-% for r...eal
+%% int.
+%
+%  Pass the salt please. The most basic example: pass a Prolog list of integers to an R variable 
+%  and then back again to a Prolog variable.
 %
 int :-
      i <- [1,2,3,4],
      I <- i,
      write( i(I) ), nl.
 
+%% float.
+%
+%  Pass a Prolog list of floats to an R variable and then back again to a Prolog variable.
+%
 float :-
      f <- [1.0,2,3,4],
      F <- f,
      write( f(F) ), nl.
 
+%% float.
+%
+%  Pass a mixed Prolog list of integers and floats to an R variable and then back again to a Prolog variable.
+%  The returning list is occupied by floats as is the R variable.
+%
 to_float :-
      m <- [1,2,3,4.0],
      M1 <- m,
@@ -25,14 +40,37 @@ to_float :-
      M2 <- m,
      write( m(M2) ), nl.
 
+%% bool.
+%
+%
 bool :- 
      b <- [true,false,true,true],
      B <- b,
      write( b(B) ), nl.
 
+%% at_bool.
+%
+%  In cases where disambiguation is needed, boolean values can be represented by @Val terms.
+%
+at_bool :- 
+     b <- [@true,@false,@true,@true],
+     B <- b,
+     write( at_b(B) ), nl.
+
+%%  bool_e.
+%
+%   This generates an error since there is a non boolean value in a list that looks like 
+%   containing boolean values.
+%
 bool_e :-    % generates error
      b <- [true,false,true,true,other].
 
+
+%%  bool_back.
+%
+%   Get some boolean values back from applying a vector element equality to an integer
+%   vector we just passed to R. Prints the R bools first for comparison.
+%
 bool_back :- 
      t <- [1,2,3,4,5,1],
      s <- t==1,
@@ -40,65 +78,120 @@ bool_back :-
      S <- s,
      write( s(S) ), nl.
 
-mix_vector(Z) :-
-   z <- [1.2,2,3],
-   Z <- z.
-
-char :- 
+%% atom_char.
+%
+%  Pass some atoms to an R vector of characters.
+%
+atom_char :- 
      f <- [a,b,c],
+     <- f,
      F <- f,
      write( f(F) ), nl.
 
+%% matrix_int. 
+%
+%  Pass a 2-level list of lists of integers to an R matrix (and back again).
+%
 matrix_int :-
      a <- [[1,2,3],[4,5,6]],
+     <- a,
      A <- a,
-     write( a(A) ), nl.
+     nl, write( a(A) ), nl.
 
+%% matrix_char. 
+%
+%  Pass a 2-level list of lists of charactesrs to an R matrix (and back again).
+%
 matrix_char :-
      a <- [[a,b,c],[d,e,f]],
+     <- a,
      A <- a,
      write( a(A) ), nl.
 
+%% list.
+%
+%  A Prolog = pairlist to a R list. Shows 2 alternative way to access the list items.
+% 
 list :-
      a <- [x=1,y=0,z=3],
+     <- a,
+     write( 'First element of list :' ), nl,
+     <- a^[[1]],
+     write( 'Second element of list :' ), nl,
+     <- a$y,
      A <- a,
      write( a(A) ), nl.
 
+%% list_ea.
+%
+% Produces error due to name of constructor: -.
+%
 list_ea :-  % produces error
      a <- [x=1,y=0,z-3],
+     <- a,
      A <- a,
      write( a(A) ), nl.
 
-list_eb :- % produces error
+%% list_eb.
+%
+% Produces error due to mismathc of arity of =.
+%
+list_eb :- 
      a <- [x=1,y=0,=(z,3,4)],
      A <- a,
      write( a(A) ), nl.
 
+%% char_list.
+%
+%  Pass a list which has a char value.
+%
 char_list :-
      a <- [x=1,y=0,z=three],
      A <- a,
+     <- a,
      memberchk( Z=three, A ),
      write( z(Z):a(A) ), nl.
 
+%% mix_list. 
+%
+%  An R-list of mixed types.
+%
 mix_list :-
      a <- [x=1,y=[1,2,3],z=[[a,b,c],[d,e,f]],w=[true,false]],
      A <- a, 
      <- print(a),
      write( a(A) ), nl.
 
-composite_list :-
+%% add_element.
+%
+%   Adds a third element to a list after creation.
+%
+add_element :-
      x <- [a=1,b=2],
      x$c <- [3,4], 
      <- x,    % print   =   $a 3
      X <- x,
      write( 'X'(X) ), nl.   % X = [a=3.0].
-     
 
-singleton :- 
+% singletons.
+%
+%  Pass an integer and a singleton number list and get them back.
+% Although in R both are passed as vectors of length on, when back in Prolog
+% the singleton list constructors are stripped, returing a single integer value in both cases.
+%  
+singletons :- 
      s <- 3,
      S <- s,
-     write( 'S'(S) ), nl.
+     <- s,
+     t <- [3],
+     <- t,
+     T <- t,
+     write( 'S'(S)-'T'(T) ), nl.
 
+%% assign. 
+%
+% Simple assignment of an R function (+) application on 2 R values originated in Prolog.
+% 
 assign :- 
      a <- 3,
      b <- [2],
@@ -106,43 +199,87 @@ assign :-
      write( 'C'(C) ), nl.
 
 
+%% assign_1.
+%
+%  Assign an R operation on matrices to a Prolog variable.
+%
 assign_1 :- 
      a <- [[1,2,3],[4,5,6]], B <- a*3, write( 'B'(B) ), nl.
 
+%% assign_2.
+%
+%  Assign an R operation on matrices to a Prolog variable.
+%
 assign_2 :- 
      a <- [[1,2,3],[4,5,6]], b <- 3, C <- a*b, write( 'C'(C) ), nl.
 
+%% assign_r.
+%
+%  Assign to an R variable and print it. Using c as an R variable is also a good test,
+%  as we test against c(...).
+%
 assign_r :- 
      a <- [3],
      b <- [2],
      c <- a + b,
      <- c.
 
+%% dot_in_function_names.
+%
+%  Test dots in functions names via the .. mechanism.
+%
 dot_in_function_names :-
      a <- [1.1,2,3],
      <- a,
      x <- as..integer(a),
      <- x.
 
+%% dot_in_rvars.
+%
+%  Test dots in R variable names via the .. mechanism. Generates an error on the last goal.
+%
 dot_in_rvars :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
      <- print('a..b').  % produces an error, as it should
 
-semi_column :- 
+%% semi_column.
+%
+%  A:B in R generates a vector of all integers from A to B.
+%
+semi_column :-
      z <- 1:50,
      Z <- z, 
      length( Z, Len ),
      write( len(Len) ), nl.
 
+%% c_vectors.
+%
+%  r.eel also supports c() R function concatenation.
+%
+c_vectors :-
+     a <- c(1,2,3),
+     b <- c(1,1,2,2) + c(1:4),
+     <- a,
+     <- b,
+     C <- a+b,
+     write( 'C'(C) ), nl.
+
+%% empty_args.
+%
+%  Test calling R functions that take no arguments (via foo(.)).
+%
 empty_args :-
      <- plot( 1:10, 1:10 ),
      findall( I, (between(1,6,I),write('.'), flush_output, sleep(1)), _ ),
      nl,
      <- dev..off(.).
 
-% thanks to Michiel Hildebrand 
+% binary_op.
+%
+% Early versions of r..eal were not handling this example properly.  Thanks to Michiel Hildebrand for spotting this.
+% The correct resutl is =|[0.0,4.0]|=. First subtract v1 from v2 and then take power 2.
 %
 binary_op :-
      v1 <- c(1,1),
@@ -151,10 +288,30 @@ binary_op :-
      write( P ), nl.
      % not !!! : P = [0.0, 0.0].
 
-plot_cpu :-
-     plot_cpu( 10 ).
+%% utf.
+%
+% Plots 3 points with the x-axis label showing some Greek letters (alpha/Omega).
+%
+utf :-
+     <- plot( c(1,2,3), c(3,2,1), xlab=+[945,0'/,937] ),
+     findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
+     nl,
+     <- dev..off(.).
 
-list_args :-
+%% plot_cpu.
+%
+%  Create a plot of 4 time points. Each having a push and a pull time component.
+%  These are the time it takes to push a list through to R and the time to Pull the same
+%  (very long) list back.
+%
+plot_cpu :-
+     plot_cpu( 1000 ).
+
+%% list_times.
+%
+% Print some timing statistics for operations on a long list of integers.
+%
+list_times :-
      findall( I, between(1,10000000,I), List ),
      statistics( cputime, Cpu1 ), write( cpu_1(Cpu1) ), nl,
      l <- List,
@@ -165,7 +322,7 @@ list_args :-
      <- a,
      <- b.
 
-% from r_session, 
+% Some tests from r_session, 
 %
 rtest :-
      <- set..seed(1),
@@ -205,30 +362,32 @@ tut2 :-
 	<- e,
 	alpha <- 1:10,
 	alpha <- alpha^[2 * 1:5],
+     <- alpha,   % = 2, 4, 6, 8 10
 	length(alpha) <- 3,
-	<- alpha,
+	<- alpha,   % = 2, 4, 6
      nl, write( ' on beta now ' ), nl, nl,
      beta <- 1:10,
      beta <- 2 * beta,
-     <- beta,
+     <- beta,    % 2  4  6  8 10 12 14 16 18 2
      length(beta) <- 3,
-     <- beta.
+     <- beta.    % 2 4 6
 
 % Getting and setting attributes
 tut3 :-
 	z <- 1:100,
-	attr(z, "dim") <- c(10,10),
+	attr(z, +"dim") <- c(10,10),
 	<- z.
 
 % factors and tapply.
 tut4 :-
-	state <- c("tas", "sa",  "qld", "nsw", "nsw", "nt",  "wa",  "wa",
+      /*
+	 state <- c("tas", "sa",  "qld", "nsw", "nsw", "nt",  "wa",  "wa",
                   "qld", "vic", "nsw", "vic", "qld", "qld", "sa",  "tas",
                   "sa",  "nt",  "wa",  "vic", "qld", "nsw", "nsw", "wa",
-                  "sa",  "act", "nsw", "vic", "vic", "act"),
-     astate <- [tas,sa,qld,nsw,nsw,nt,wa,wa,qld,vic,nsw,vic,qld,qld,sa,tas,sa,nt,wa,vic,qld,nsw,nsw,wa,sa,act,nsw,vic,vic,act],
+                  "sa",  "act", "nsw", "vic", "vic", "act"), */
+     state <- [tas,sa,qld,nsw,nsw,nt,wa,wa,qld,vic,nsw,vic,qld,qld,sa,tas,sa,nt,wa,vic,qld,nsw,nsw,wa,sa,act,nsw,vic,vic,act],
 	<- state,
-     <- astate,
+     % <- astate,
 	statef <- factor(state),
 	<- statef,
 	<- levels(statef),
@@ -267,8 +426,8 @@ tut5 :-
 
 tut6 :-
 	d <- outer(0:9, 0:9),
-	fr <- table(outer(d, d, "-")),
-	r(plot(as..numeric(names(fr)), fr, type="h", xlab="Determinant", ylab="Frequency")),
+	fr <- table(outer(d, d, +"-")),
+	r(plot(as..numeric(names(fr)), fr, type=+"h", xlab=+"Determinant", ylab=+"Frequency")),
      nl, write( '   type query: ``devoff.\'\' to close the plot display ' ), nl, nl.
 
 % auxiliary,
@@ -325,6 +484,6 @@ plot_cpu( Factor ) :-
      push <- Push,
      pull <- Pull,
      write( plotting(Pull,Push) ), nl,
-     <- plot( points, pull, ylab ='"pull + push (red) - in seconds"' ),
+     <- plot( points, pull, ylab ='"pull & push (red) - in seconds"' ),
      r_char( red, Red ),
      <- points( points, push, col=Red ).

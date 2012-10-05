@@ -36,7 +36,8 @@
 	op(400,yfx,'%o%'),
 	op(400,yfx,'%in%'),
 	op(400,yfx,$),
-	op(400,fx,@)
+	op(800,fx,@),
+     op(400,xfy,=+ )
      ]).
 
 :- use_module(library(shlib)).
@@ -382,17 +383,17 @@ real( 0:0:5, 2012/09/12 ).
 %
 r( RvarIn ) :-
      is_rvar( RvarIn, _Rvar ),
-     rexpr_codes( RvarIn, RvCodes, [] ),
+     rexpr_codes( RvarIn, [], RvCodes ),
      atom_codes( Rvar, RvCodes ),
      !,
      r( print(Rvar) ).
 r( R ) :-
-     rexpr_codes( R, Rcodes, TmpRs ),
+     rexpr_codes( R, TmpRs, Rcodes ),
      !,
 	send_r_command(Rcodes),
      maplist( r_remove, TmpRs ).
 r( R ) :-
-     catch( rterm_to_string(R,TmpRs,Rcodes,[]), _, fail ),
+     catch( rexpr_codes(R,TmpRs,Rcodes,[]), _, fail ),
      !,
 	send_r_command(Rcodes),
      maplist( r_remove, TmpRs ).
@@ -409,22 +410,18 @@ r( Plvar, RvarIn ) :-
      !,
      robj_to_pl_term( Rvar, Plvar ).
 
-r( LRexpr, RRexpr ) :-
-	atom(LRexpr),
-	cvec(RRexpr), !,
-	send_c_vector(RRexpr, LRexpr).
 r( RvarIn, PlrExpr ) :-
-     rvar_identifier( RvarIn, _Rvar ),
+     rvar_identifier( RvarIn, _Rvar, _RAsgn ),
      !,
      assignment( PlrExpr, RvarIn ).
 r( Plvar, Rexpr ) :-
      var(Plvar),
-     rexpr_codes( Rexpr, Rcodes, TmpRs ),
+     rexpr_codes( Rexpr, TmpRs, Rcodes ),
      !,
      rexpr_to_pl_term( Rcodes, Plvar ),
      maplist( r_remove, TmpRs ).
 r( LRexpr, RRexpr ) :-
-     catch( rexpr_codes('<-'(LRexpr,RRexpr),Rcodes,TmpRs),_,fail),
+     catch( rexpr_codes('<-'(LRexpr,RRexpr),TmpRs,Rcodes),_,fail),
      !,
      send_r_command( Rcodes ),
      maplist( r_remove, TmpRs ).
@@ -441,18 +438,18 @@ r_remove( Plvar ) :-
 is_rvar( Rvar ) :-
      is_rvar( Rvar, _ ).
 %%	is_rvar(+Rvar,-RvarAtom).
-%         True if Rvar is an atom and a known variable in the R environment
-%         and RvarAtom is the atomic representation of the Rvar term.
+%         True if Rvar is a term and a known variable in the R environment.
+%         RvarAtom is the atomic representation of the Rvar term.
 %
 is_rvar( RvarIn, Rvar ) :-
      % atom( Rvar ),
-     rvar_identifier( RvarIn, Rvar ),
+     rvar_identifier( RvarIn, Rvar, _ ),
      r_char( Rvar, Rchar ),
-     rexpr_codes( exists(Rchar), Rcodes, [] ),
+     rexpr_codes( exists(Rchar), [], Rcodes ),
      %here: rexpr_to_pl_term( Rcodes, true ).
      rexpr_to_pl_term( Rcodes, Rbool ),
      Rbool == true,
-     rexpr_codes( mode(Rvar), Rmode, [] ),
+     rexpr_codes( mode(Rvar), [], Rmode ),
      rexpr_to_pl_term( Rmode, Plmode ),
      % atom_codes( Ratom, Rmode ),
      RvarModes  = [character,complex,list,logical,'NULL',numeric,raw],
@@ -476,119 +473,127 @@ devoff :-
 %         Currently only waiting for Return to be pressed.
 %
 r_wait :-
-     write( 'Press Return to continue...' ), nl,
-     read_line_to_codes( user_input, _ ).
+     write('Press Return to continue...'), nl,
+     read_line_to_codes(user_input, _).
 
 %%% end of interface predicates
 
-rexpr_codes( Rexpr, Rcodes, [] ) :-
-     number( Rexpr ),
-     !,
-     number_codes( Rexpr, Rcodes ).
-rexpr_codes( Rexpr, Rcodes, [] ) :-
-     atom( Rexpr ),
-     !,
-     atom_codes( Rexpr, Rcodes ).
-rexpr_codes( Rcodes, Rcodes, [] ) :-
-     Rcodes = [_|_],
-     ascii_string( Rcodes ),
-     !.
-rexpr_codes( Rterm, Rcodes, TmpRs ) :-
-     rterm_to_string( Rterm, TmpRs, Rcodes, [] ).
+rexpr_codes( Rterm, RTmps, Rcodes ) :-
+     rexpr_codes( Rterm, RTmps, Rcodes, [] ).
 
-assignment( PlData, Rvar ) :-
-     atom( Rvar ),  % fixme a$b <- 3 won't work with set_r_variable/2.
-                    % if atom/1 is removed. now we depend on extra R variables
-     ( number(PlData); PlData=[_|_]; boolean_atom(PlData); PlData = @_),
+assignment(PlDataIn, Rvar) :-
+     atom( Rvar ),
+          % we would like to use rvar_identifier here, instead of atom/1
+          % but a$b <- 3 does not work with set_r_variable/2.
+     pl_data( PlDataIn, PlData ),
      !,
+     % term_to_atom( RvarIn, RvarAtom ),
      set_r_variable(Rvar, PlData).
+
 assignment( Rexpr, Rvar ) :-
-     rexpr_codes( '<-'(Rvar,Rexpr), Rcodes, TmpRs ),
+     rvar_identifier( Rvar, _Rvar, RAssgn ),
+     rexpr_codes( '<-'(RAssgn,Rexpr), TmpRs, Rcodes ),
      !,
      send_r_command( Rcodes ),
      maplist( r_remove, TmpRs ).
 
-rvar_identifier( Rvar, Rvar ) :-
-    atom( Rvar ).
-rvar_identifier( A..B, Atom ) :-
-     atom(A), 
-     rvar_identifier( B, Batom ),
-     atomic_list_concat( [A,'.',Batom], Atom ).
-rvar_identifier( A$B, A ) :-
-     atom(A), 
-     rvar_identifier( B, _Bid ).
-rvar_identifier( A^B, A ) :-
-     atom( A ),
-     is_list( B ).
+pl_data( PlData, PlData ) :-
+     ( number(PlData); PlData=[_|_]; boolean_atom(PlData); PlData = @(_) ).
+/*
+pl_data( PlDataIn, PlData ) :-
+     PlDataIn =.. [c|PlData].
+     */
 
-rterm_to_string(V,[]) -->
+rvar_identifier( Rvar, Rvar, Rvar ) :-
+    atom( Rvar ).
+rvar_identifier( A..B, Atom, Atom ) :-
+     atom(A), 
+     rvar_identifier( B, Batom, _ ),
+     atomic_list_concat( [A,'.',Batom], Atom ).
+rvar_identifier( A$B, A, C ) :-
+     atom(A), 
+     rvar_identifier( B, Bid, _ ),
+     term_to_atom( A$Bid, C ).
+rvar_identifier( A^B, A, C ) :-
+     atom( A ),
+     is_list( B ),
+     term_to_atom( B, Batom ),
+     atom_concat( A, Batom, C ).
+
+rexpr_codes(V,[]) -->
 	{ var(V) }, !,
 	{ throw(error(instantiation_error,r_interface)) }.
-rterm_to_string(A,[]) -->
-	{ ascii_string(A) }, !,
-        "\"", A, "\"".
-rterm_to_string(A,TmpRs) -->
-	% x.y
-	{ A = [Head|Tail], Tail \= [_|_], Tail \= [] }, !,
-     rterm_to_string(Head,TmpH),
-	".",
-	rterm_to_string(Tail,TmpT),
-     {append(TmpH,TmpT,TmpRs)}.
-rterm_to_string(Array,TmpRs) -->
+rexpr_codes(+A,[]) -->
+	{ codes_string(A,Q) }, !,
+        "\"", Q, "\"".
+rexpr_codes(=+(A,B),List) -->
+     !,
+     rexpr_codes((A = +B),List).
+rexpr_codes(Array,TmpRs) -->
 	{ Array = [_|_] },
 	array_to_c(Array,TmpV), !,
      { TmpRs = [TmpV] }.
-rterm_to_string(A,[]) -->
+rexpr_codes(A,[]) -->
      { functor(A,Name,1),arg(1,A,'.')}, !,
        add_atom(Name), "()".
-	% { rfunc(A) }, !, add_atom(A), "()".
-rterm_to_string(A,[]) -->
+/*   This can be used if we want c() to be passed by lists, 
+     but it currently does not accommodate c(1:3,1:3)
+rexpr_codes(A,List) -->
+     { 
+       A =.. [c|B], B \== []
+     },
+     !,
+     rexpr_codes(B,List).
+     */
+rexpr_codes(A,[]) -->
 	{ atom(A) }, !,
         add_atom(A).
-rterm_to_string(A,[]) -->
+rexpr_codes(A,[]) -->
 	{ number(A) }, !,
 	add_number(A).
-rterm_to_string(A^List,[]) -->
+rexpr_codes(A^List,[]) -->
 	{ atom(A), is_list(List) }, !,
 	add_atom(A),
      indices_to_string( List ).
-% convert : to ., . has different associativity in Prolog.
-rterm_to_string(A$B,TmpRs) -->
+rexpr_codes(A$B,TmpRs) -->
      !,
-     rterm_to_string( A, TmpA ),
+     rexpr_codes( A, TmpA ),
      "$",
-     rterm_to_string( B, TmpB ),
+     rexpr_codes( B, TmpB ),
      {append(TmpA,TmpB,TmpRs)}.
-rterm_to_string(A1..A2,[]) --> { atom(A1) }, !,
+rexpr_codes(A1..A2,[]) --> { atom(A1) }, !,
 	add_atom(A1),
 	".",
-	rterm_to_string(A2,[]).
+	rexpr_codes(A2,[]).
 % R function definition
-rterm_to_string((A1 :- A2), TmpRs) -->
+rexpr_codes((A1 :- A2), TmpRs) -->
 	!,
-	rterm_to_string(A1,TmpA1),
+	rexpr_codes(A1,TmpA1),
 	" ",
-	rterm_to_string(A2,TmpA2),
+	rexpr_codes(A2,TmpA2),
      {append(TmpA1,TmpA2,TmpRs)}.
-rterm_to_string(S,TmpRs) -->
-	{ functor(S, Na, 2), binary(Na), atom_codes(Na,NaS), arg(1,S,A1), arg(2,S,A2) }, !,
+rexpr_codes(S,TmpRs) -->
+	{ functor(S, Na, 2),  
+       binary(Na), atom_codes(Na,NaS),
+       arg(1,S,A1), arg(2,S,A2)
+     }, !,
      { ( (Na=(<-);Na=(=)) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
-     Lft, rterm_to_string(A1,TmpA1),
+     Lft, rexpr_codes(A1,TmpA1),
 	" ", NaS, " ",
-	rterm_to_string(A2,TmpA2), Rgt,
+	rexpr_codes(A2,TmpA2), Rgt,
      {append(TmpA1,TmpA2,TmpRs)}.
-rterm_to_string(S,TmpRs) -->
+rexpr_codes(S,TmpRs) -->
 	{ S =.. [F|Args], F \== '.' },
 	add_atom(F),
 	"(",
-	rterms_to_string(Args, first,TmpRs),
+	rexprs_codes(Args, first,TmpRs),
 	")".
 
-rterms_to_string([], _, []) --> [].
-rterms_to_string([Arg|Args], First, TmpRs) -->
+rexprs_codes([], _, []) --> [].
+rexprs_codes([Arg|Args], First, TmpRs) -->
 	( { var(First) } -> "," ; "" ),
-	rterm_to_string(Arg,TmpA),
-	rterms_to_string(Args, _,TmpAs),
+	rexpr_codes(Arg,TmpA),
+	rexprs_codes(Args, _,TmpAs),
      {append(TmpA, TmpAs, TmpRs)}.
 
 indices_to_string( List ) -->
@@ -618,15 +623,30 @@ index_comma( _ ) -->
      !,
      ",".
 
-ascii_string([]).
-ascii_string(.(C,Cs)) :-
+%% codes_string(Codes,Quoted).
+% check a list is full of (utf ?) codes
+% while replacing any " with \" to produce Quoted from Ascii
+%
+codes_string([],[]).
+codes_string(.(C,Cs),Q) :-
 	integer(C),
-	char_type(C,ascii),
-        \+ char_type(C,cntrl),
-	ascii_string(Cs).
+	% <=nicos.  char_type(C,ascii),
+     % <=nicos.   \+ char_type(C,cntrl),
+     char_my_utf8(C),
+     sew_code( C, Q, T ),
+	codes_string(Cs,T).
 
-ascii_list( List ) :-
-     maplist( ascii_string, List ).
+char_my_utf8( C ) :-
+	char_type(C,graph),
+     !.
+char_my_utf8( C ) :-
+	char_type(C,white).
+
+%% ascii_code_sew( C, Q, T ).
+%  Sew C or its quoted form on list Q with its tail returned in T.
+%
+sew_code( 34, [0'\\,0'"|T], T ) :- !.
+sew_code( C, [C|T], T ).
 
 %
 % a nil atom in Prolog is likely to be the empty string in R.
@@ -674,18 +694,5 @@ binary_op_associativity( xfx ).
 
 boolean_atom( true ).
 boolean_atom( false ).
-
-cvec(RTerm) :-
-	functor(RTerm, c, Arity),
-	check_cvec(Arity, RTerm).
-
-% done, it is ok.
-check_cvec(0, _RTerm) :- !.
-% start from the bottom because it is most likely to have problems.
-check_cvec(I, RTerm) :-
-	arg(I, RTerm, A),
-	float(A),
-	I1 is I-1,
-	check_cvec(I1, RTerm).
 
 :- initialization(start_r, now).
