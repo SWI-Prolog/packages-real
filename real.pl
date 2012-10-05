@@ -273,9 +273,9 @@ Many thanks to the original YapR developers for inspiration and some functions.
 @author		Nicos Angelopoulos
 @author		Vitor Santos Costa
 @author		Jan Wielemaker
-@version	0:0:5, 2012/09/12
+@version	0:0:6, 2012/10/05
 @license	Perl Artistic License
-@see		examples/real_ex.pl
+@see		examples/for_real.pl
 @see		examples/real/
 @see		http://www.r-project.org/
 
@@ -347,7 +347,7 @@ start_r :-
 %% real( Version,  Date ).
 %          Version and release date.
 %
-real( 0:0:5, 2012/09/12 ).
+real( 0:0:6, 2012/10/05 ).
 
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
