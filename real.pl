@@ -526,6 +526,9 @@ rexpr_codes(V,[]) -->
 rexpr_codes(+A,[]) -->
 	{ codes_string(A,Q) }, !,
         "\"", Q, "\"".
+rexpr_codes(library(A),[]) -->
+	{ codes_string(A,Q) }, !,
+        "library(\"", Q, "\")".
 rexpr_codes(=+(A,B),List) -->
      !,
      rexpr_codes((A = +B),List).
