@@ -44,6 +44,7 @@
 :- use_module(library(lists)).
 :- use_module(library(apply_macros)).
 :- use_module(library(charsio)).
+:- use_module(library(readutil)).
 
 /** <module> r..eal
 

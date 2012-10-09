@@ -463,18 +463,20 @@ cpu_points( [H|T], [S|Ss], [L|Ls] ) :-
      between_1_and(H,Long),
      statistics( cputime, _) , 
      length( Long, Lengtho ), write( leno(Lengtho) ), nl,
-     statistics( cputime, S ), 
+     statistics( cputime, S0 ), 
+     ( number(S0) -> S0 = S ; S0 = [_,S] ),
      % statistics( cputime, [_,S] ), 
      long <- Long,
      Back <- long,
      Back = [Hb|_],
      Hb =:= 1,
-     statistics( cputime, L ), 
+     statistics( cputime, L0 ), 
+     ( number(L0) -> L0 = L ; L0 = [_,L] ),
      % statistics( cputime, [_,L] ), 
      length( Back, BackLen ),
      write( back_len(BackLen) ), nl,
      % L = 0,
-     cpu_points( T, Ss, Ls ).
+     cpu_points( T, Ss, Ls ) .
 
 % auxiliary,
 between_1_and(N,X) :-
