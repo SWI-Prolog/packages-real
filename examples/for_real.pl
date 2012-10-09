@@ -4,7 +4,7 @@
 :- use_module( library(apply_macros) ).
 :- use_module( library(readutil) ).
 
-%% for_real.
+% for_real.
 %
 %  Some examples illustrating usage of the r..eal library.
 
@@ -16,12 +16,12 @@ for_real :-
      write( 'Output: ' ), nl,
      ( catch(Head,Exc,Fex=true) -> 
           ( Fex==true-> 
-               write( status:caught(Exc) ) 
+               write( '! ' ), write( caught(Exc) ), nl, abort
                ;
                write(status:true)
           )
           ;
-          write(status:false)
+          write( '! ' ), write( failure ), nl, abort
      ),
      nl, nl, write('-----'), nl, nl,
      fail.
@@ -29,7 +29,7 @@ for_real :-
      write( 'All done.' ), nl.
 
 
-%% int.
+% int.
 %
 %  Pass the salt please. The most basic example: pass a Prolog list of integers to an R variable 
 %  and then back again to a Prolog variable.
@@ -39,7 +39,7 @@ ex(int) :-
      I <- i,
      write( i(I) ), nl.
 
-%% float.
+% float.
 %
 %  Pass a Prolog list of floats to an R variable and then back again to a Prolog variable.
 %
@@ -48,7 +48,7 @@ ex(float) :-
      F <- f,
      write( f(F) ), nl.
 
-%% float.
+% float.
 %
 %  Pass a mixed Prolog list of integers and floats to an R variable and then back again to a Prolog variable.
 %  The returning list is occupied by floats as is the R variable.
@@ -61,7 +61,7 @@ ex(to_float) :-
      M2 <- m,
      write( m(M2) ), nl.
 
-%% bool.
+% bool.
 %
 %
 ex(bool) :- 
@@ -69,7 +69,7 @@ ex(bool) :-
      B <- b,
      write( b(B) ), nl.
 
-%% at_bool.
+% at_bool.
 %
 %  In cases where disambiguation is needed, boolean values can be represented by @Val terms.
 %
@@ -78,16 +78,16 @@ ex(at_bool) :-
      B <- b,
      write( at_b(B) ), nl.
 
-%%  ex(bool_e).
+%  ex(bool_e).
 %
 %   This generates an error since there is a non boolean value in a list that looks like 
 %   containing boolean values.
 %
 ex(bool_e) :-    % generates error
-     b <- [true,false,true,true,other].
+     catch(b <- [true,false,true,true,other], Caught, true),
+     (\+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail).
 
-
-%%  ex(bool_back).
+%  ex(bool_back).
 %
 %   Get some boolean values back from applying a vector element equality to an integer
 %   vector we just passed to R. Prints the R bools first for comparison.
@@ -99,7 +99,7 @@ ex(bool_back) :-
      S <- s,
      write( s(S) ), nl.
 
-%% ex(atom_char).
+% ex(atom_char).
 %
 %  Pass some atoms to an R vector of characters.
 %
@@ -109,7 +109,7 @@ ex(atom_char) :-
      F <- f,
      write( f(F) ), nl.
 
-%% ex(matrix_int). 
+% ex(matrix_int). 
 %
 %  Pass a 2-level list of lists of integers to an R matrix (and back again).
 %
@@ -119,7 +119,7 @@ ex(matrix_int) :-
      A <- a,
      nl, write( a(A) ), nl.
 
-%% ex(matrix_char). 
+% ex(matrix_char). 
 %
 %  Pass a 2-level list of lists of charactesrs to an R matrix (and back again).
 %
@@ -129,7 +129,7 @@ ex(matrix_char) :-
      A <- a,
      write( a(A) ), nl.
 
-%% ex(list).
+% ex(list).
 %
 %  A Prolog = pairlist to a R list. Shows 2 alternative way to access the list items.
 % 
@@ -143,26 +143,28 @@ ex(list) :-
      A <- a,
      write( a(A) ), nl.
 
-%% ex(list_ea).
+% ex(list_ea).
 %
 % Produces error due to name of constructor: -.
 %
 ex(list_ea) :-  % produces error
-     a <- [x=1,y=0,z-3],
+     catch( a <- [x=1,y=0,z-3], Caught, true ),
+     ( \+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail ),
      <- a,
      A <- a,
      write( a(A) ), nl.
 
-%% ex(list_eb).
+% ex(list_eb).
 %
 % Produces error due to mismathc of arity of =.
 %
 ex(list_eb) :- 
-     a <- [x=1,y=0,=(z,3,4)],
+     catch( a <- [x=1,y=0,=(z,3,4)], Caught, true ),
+     ( \+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail ),
      A <- a,
      write( a(A) ), nl.
 
-%% ex(char_list).
+% ex(char_list).
 %
 %  Pass a list which has a char value.
 %
@@ -173,7 +175,7 @@ ex(char_list) :-
      memberchk( Z=three, A ),
      write( z(Z):a(A) ), nl.
 
-%% ex(mix_list). 
+% ex(mix_list). 
 %
 %  An R-list of mixed types.
 %
@@ -183,7 +185,7 @@ ex(mix_list) :-
      <- print(a),
      write( a(A) ), nl.
 
-%% ex(add_element).
+% ex(add_element).
 %
 %   Adds a third element to a list after creation.
 %
@@ -209,7 +211,7 @@ ex(singletons) :-
      T <- t,
      write( 'S'(S)-'T'(T) ), nl.
 
-%% ex(assign). 
+% ex(assign). 
 %
 % Simple assignment of an R function (+) application on 2 R values originated in Prolog.
 % 
@@ -220,21 +222,21 @@ ex(assign) :-
      write( 'C'(C) ), nl.
 
 
-%% ex(assign_1).
+% ex(assign_1).
 %
 %  Assign an R operation on matrices to a Prolog variable.
 %
 ex(assign_1) :- 
      a <- [[1,2,3],[4,5,6]], B <- a*3, write( 'B'(B) ), nl.
 
-%% ex(assign_2).
+% ex(assign_2).
 %
 %  Assign an R operation on matrices to a Prolog variable.
 %
 ex(assign_2) :- 
      a <- [[1,2,3],[4,5,6]], b <- 3, C <- a*b, write( 'C'(C) ), nl.
 
-%% ex(assign_r).
+% ex(assign_r).
 %
 %  Assign to an R variable and print it. Using c as an R variable is also a good test,
 %  as we test against c(...).
@@ -245,7 +247,7 @@ ex(assign_r) :-
      c <- a + b,
      <- c.
 
-%% dot_in_function_names.
+% ex(dot_in_function_names).
 %
 %  Test dots in functions names via the .. mechanism.
 %
@@ -255,7 +257,7 @@ ex(dot_in_function_names) :-
      x <- as..integer(a),
      <- x.
 
-%% dot_in_rvars.
+% ex(dot_in_rvars).
 %
 %  Test dots in R variable names via the .. mechanism. Generates an error on the last goal.
 %
@@ -263,9 +265,13 @@ ex(dot_in_rvar) :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
-     <- print('a..b').  % produces an error, as it should
+     ( <- print('a..b') -> % produces an error, as it should
+          fail
+          ;
+          true
+     ).
 
-%% semi_column.
+% semi_column.
 %
 %  A:B in R generates a vector of all integers from A to B.
 %
@@ -275,19 +281,19 @@ ex(semi_column) :-
      length( Z, Len ),
      write( len(Len) ), nl.
 
-%% c_vectors.
+% c_vectors.
 %
 %  r.eel also supports c() R function concatenation.
 %
 ex(c_vectors) :-
-     a <- c(1,2,3),
+     a <- c(1,2,3),  % this goes via the fast route
      b <- c(1,1,2,2) + c(1:4),
      <- a,
      <- b,
      C <- a+b,
      write( 'C'(C) ), nl.
 
-%% empty_args.
+% empty_args.
 %
 %  Test calling R functions that take no arguments (via foo(.)).
 %
@@ -309,7 +315,7 @@ ex(binary_op) :-
      write( P ), nl.
      % not !!! : P = [0.0, 0.0].
 
-%% utf.
+% utf.
 %
 % Plots 3 points with the x-axis label showing some Greek letters (alpha/Omega).
 %
@@ -319,7 +325,7 @@ ex(utf) :-
      nl,
      <- dev..off(.).
 
-%% plot_cpu.
+% plot_cpu.
 %
 %  Create a plot of 4 time points. Each having a push and a pull time component.
 %  These are the time it takes to push a list through to R and the time to Pull the same
@@ -350,7 +356,7 @@ ex(rtest) :-
      r_wait,
 	devoff.
 
-%% list_times.
+% list_times.
 %
 % Print some timing statistics for operations on a long list of integers.
 %

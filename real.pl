@@ -483,11 +483,9 @@ rexpr_codes( Rterm, RTmps, Rcodes ) :-
 
 assignment(PlDataIn, Rvar) :-
      atom( Rvar ),
-          % we would like to use rvar_identifier here, instead of atom/1
-          % but a$b <- 3 does not work with set_r_variable/2.
+          % we would like to use rvar_identifier here, see below
      functor( PlDataIn, c, _ ),
-     % term_to_atom( RvarIn, RvarAtom ),
-     send_c_vector(PlDataIn, RVar), !.
+     send_c_vector(PlDataIn, Rvar), !.
 assignment(PlDataIn, Rvar) :-
      atom( Rvar ),
           % we would like to use rvar_identifier here, instead of atom/1
