@@ -860,24 +860,42 @@ send_c_vector(term_t tvec, term_t tout)
   _PL_get_arg(1, tvec, targ);
   if (PL_is_number(targ)) {
     double *vec;
+    int ints = TRUE;
 
     for (i = 1; i < arity; i++) {
       _PL_get_arg(i+1, tvec, targ);
-      if (!PL_is_number(targ))
-	return FALSE;
+      if (!PL_is_integer(targ)) {
+	ints = FALSE;
+	if (!PL_is_float(targ)) {
+	  return FALSE;
+	}
+      }
     }
-    PROTECT(ans = allocVector(REALSXP, arity));
-    if (!ans)
-      return FALSE;
-    vec = REAL(ans);
-    for (i = 0; i < arity; i++) {
-      _PL_get_arg(i+1, tvec, targ);
-      if (!PL_get_float(targ, vec+i)) {
+    if (ints) {
+      PROTECT(ans = allocVector(INTSXP, arity));
+      if (!ans)
+	return FALSE;
+      vec = INTEGER(ans);
+      for (i = 0; i < arity; i++) {
 	int64_t j;
 	_PL_get_arg(i+1, tvec, targ);
 	if (!PL_get_int64_ex(targ, &j))
 	  return FALSE;
 	vec[i] = j;
+      }
+    } else {
+      PROTECT(ans = allocVector(REALSXP, arity));
+      if (!ans)
+	return FALSE;
+      vec = REAL(ans);
+      for (i = 0; i < arity; i++) {
+	_PL_get_arg(i+1, tvec, targ);
+	if (!PL_get_float(targ, vec+i)) {
+	  int64_t j;
+	  if (!PL_get_int64_ex(targ, &j))
+	    return FALSE;
+	  vec[i] = j;
+	}
       }
     }
   } else {
