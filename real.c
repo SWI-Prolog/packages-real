@@ -842,7 +842,7 @@ send_r_command(term_t cmd)
     to make the interface uniform.
     In general, Nicos thinks it is best to leave c() to the prolog interface
     as it can contain From:To constructs.
-
+*/
 
 // fast copy of a Prolog vector to R
 static foreign_t
@@ -850,7 +850,6 @@ send_c_vector(term_t tvec, term_t tout)
 { char *s;
   int arity, i;
   atom_t name;
-  double *vec;
   term_t targ = PL_new_term_ref();
   SEXP rho =  R_GlobalEnv, ans;
 
@@ -861,20 +860,36 @@ send_c_vector(term_t tvec, term_t tout)
   if ( !PL_get_atom_chars(tout, &s) ) {
     return FALSE;
   }
-  PROTECT(ans = allocVector(REALSXP, arity));
-  if (!ans)
-    return FALSE;
-  vec = REAL(ans);
-  for (i = 0; i < arity; i++) {
-    _PL_get_arg(i+1, tvec, targ);
-    if (!PL_get_float(targ, vec+i))
+  _PL_get_arg(1, tvec, targ);
+  if (PL_is_number(targ)) {
+    double *vec;
+
+    for (i = 1; i < arity; i++) {
+      _PL_get_arg(i+1, tvec, targ);
+      if (!PL_is_number(targ))
+	return FALSE;
+    }
+    PROTECT(ans = allocVector(REALSXP, arity));
+    if (!ans)
       return FALSE;
+    vec = REAL(ans);
+    for (i = 0; i < arity; i++) {
+      _PL_get_arg(i+1, tvec, targ);
+      if (!PL_get_float(targ, vec+i)) {
+	int64_t j;
+	_PL_get_arg(i+1, tvec, targ);
+	if (!PL_get_int64_ex(targ, &j))
+	  return FALSE;
+	vec[i] = j;
+      }
+    }
+  } else {
+    return FALSE;
   }
   defineVar(install(s), ans, rho);
   UNPROTECT(1);
   return TRUE;
 }
-*/
 
 
 static foreign_t
@@ -956,7 +971,7 @@ install_real(void)
   PL_register_foreign("init_r",		  0, init_R,	       0);
   PL_register_foreign("end_r",		  0, end_R,	       0);
   PL_register_foreign("send_r_command",	  1, send_r_command,   0);
-  // PL_register_foreign("send_c_vector",	  2, send_c_vector,    0);
+  PL_register_foreign("send_c_vector",	  2, send_c_vector,    0);
   PL_register_foreign("rexpr_to_pl_term", 2, rexpr_to_pl_term, 0);
   PL_register_foreign("robj_to_pl_term",  2, robj_to_pl_term,  0);
   PL_register_foreign("set_r_variable",   2, set_r_variable,   0);

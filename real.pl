@@ -485,6 +485,13 @@ assignment(PlDataIn, Rvar) :-
      atom( Rvar ),
           % we would like to use rvar_identifier here, instead of atom/1
           % but a$b <- 3 does not work with set_r_variable/2.
+     functor( PlDataIn, c, _ ),
+     % term_to_atom( RvarIn, RvarAtom ),
+     send_c_vector(PlDataIn, RVar), !.
+assignment(PlDataIn, Rvar) :-
+     atom( Rvar ),
+          % we would like to use rvar_identifier here, instead of atom/1
+          % but a$b <- 3 does not work with set_r_variable/2.
      pl_data( PlDataIn, PlData ),
      !,
      % term_to_atom( RvarIn, RvarAtom ),
