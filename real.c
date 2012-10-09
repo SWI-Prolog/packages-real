@@ -871,7 +871,7 @@ send_c_vector(term_t tvec, term_t tout)
       }
     }
     if (ints) {
-      int64_t *vec;
+      int *vec;
 
       PROTECT(ans = allocVector(INTSXP, arity));
       if (!ans)
