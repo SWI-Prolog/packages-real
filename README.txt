@@ -1,5 +1,5 @@
 
-r..eal,  0:0:5, July 2012
+r..eal,  0:0:7, October 2012
 ---
 
 r..eal is a c-based interface for connecting R to Prolog. 
@@ -41,4 +41,4 @@ In your prolog system.
 
 Nicos Angelopoulos and Vitor Santos Costa
 
-July 2012.
+October, 2012.
