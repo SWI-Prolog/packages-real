@@ -836,13 +836,10 @@ send_r_command(term_t cmd)
   return FALSE;
 }
 
-/*  Currently  we are not using this, as it only converts to floats,
-    If we want to support c(...) natively we should 
-    duplicate and modify the code that deals with lists 
-    to make the interface uniform.
-    In general, Nicos thinks it is best to leave c() to the prolog interface
-    as it can contain From:To constructs.
-*/
+/*
+    Nicos thinks it is best to leave c() to the prolog interface.
+    However, Vitor was concerned  with memory consumption. 
+    So Nicos have to add this back... */
 
 // fast copy of a Prolog vector to R
 static foreign_t

@@ -8,12 +8,33 @@
 %
 %  Some examples illustrating usage of the r..eal library.
 
+for_real :-
+     ( Head = ex(_Ex); Head = tut(_Tut) ),
+     clause( Head, Body ),
+     write(running:Head), nl, nl,
+     portray_clause( (Head:-Body) ), nl, nl,
+     write( 'Output: ' ), nl,
+     ( catch(Head,Exc,Fex=true) -> 
+          ( Fex==true-> 
+               write( status:caught(Exc) ) 
+               ;
+               write(status:true)
+          )
+          ;
+          write(status:false)
+     ),
+     nl, nl, write('-----'), nl, nl,
+     fail.
+for_real :-
+     write( 'All done.' ), nl.
+
+
 %% int.
 %
 %  Pass the salt please. The most basic example: pass a Prolog list of integers to an R variable 
 %  and then back again to a Prolog variable.
 %
-int :-
+ex(int) :-
      i <- [1,2,3,4],
      I <- i,
      write( i(I) ), nl.
@@ -22,7 +43,7 @@ int :-
 %
 %  Pass a Prolog list of floats to an R variable and then back again to a Prolog variable.
 %
-float :-
+ex(float) :-
      f <- [1.0,2,3,4],
      F <- f,
      write( f(F) ), nl.
@@ -32,7 +53,7 @@ float :-
 %  Pass a mixed Prolog list of integers and floats to an R variable and then back again to a Prolog variable.
 %  The returning list is occupied by floats as is the R variable.
 %
-to_float :-
+ex(to_float) :-
      m <- [1,2,3,4.0],
      M1 <- m,
      write( m(M1) ), nl,
@@ -43,7 +64,7 @@ to_float :-
 %% bool.
 %
 %
-bool :- 
+ex(bool) :- 
      b <- [true,false,true,true],
      B <- b,
      write( b(B) ), nl.
@@ -52,67 +73,67 @@ bool :-
 %
 %  In cases where disambiguation is needed, boolean values can be represented by @Val terms.
 %
-at_bool :- 
+ex(at_bool) :- 
      b <- [@true,@false,@true,@true],
      B <- b,
      write( at_b(B) ), nl.
 
-%%  bool_e.
+%%  ex(bool_e).
 %
 %   This generates an error since there is a non boolean value in a list that looks like 
 %   containing boolean values.
 %
-bool_e :-    % generates error
+ex(bool_e) :-    % generates error
      b <- [true,false,true,true,other].
 
 
-%%  bool_back.
+%%  ex(bool_back).
 %
 %   Get some boolean values back from applying a vector element equality to an integer
 %   vector we just passed to R. Prints the R bools first for comparison.
 %
-bool_back :- 
+ex(bool_back) :- 
      t <- [1,2,3,4,5,1],
      s <- t==1,
      <- s,
      S <- s,
      write( s(S) ), nl.
 
-%% atom_char.
+%% ex(atom_char).
 %
 %  Pass some atoms to an R vector of characters.
 %
-atom_char :- 
+ex(atom_char) :- 
      f <- [a,b,c],
      <- f,
      F <- f,
      write( f(F) ), nl.
 
-%% matrix_int. 
+%% ex(matrix_int). 
 %
 %  Pass a 2-level list of lists of integers to an R matrix (and back again).
 %
-matrix_int :-
+ex(matrix_int) :-
      a <- [[1,2,3],[4,5,6]],
      <- a,
      A <- a,
      nl, write( a(A) ), nl.
 
-%% matrix_char. 
+%% ex(matrix_char). 
 %
 %  Pass a 2-level list of lists of charactesrs to an R matrix (and back again).
 %
-matrix_char :-
+ex(matrix_char) :-
      a <- [[a,b,c],[d,e,f]],
      <- a,
      A <- a,
      write( a(A) ), nl.
 
-%% list.
+%% ex(list).
 %
 %  A Prolog = pairlist to a R list. Shows 2 alternative way to access the list items.
 % 
-list :-
+ex(list) :-
      a <- [x=1,y=0,z=3],
      <- a,
      write( 'First element of list :' ), nl,
@@ -122,64 +143,64 @@ list :-
      A <- a,
      write( a(A) ), nl.
 
-%% list_ea.
+%% ex(list_ea).
 %
 % Produces error due to name of constructor: -.
 %
-list_ea :-  % produces error
+ex(list_ea) :-  % produces error
      a <- [x=1,y=0,z-3],
      <- a,
      A <- a,
      write( a(A) ), nl.
 
-%% list_eb.
+%% ex(list_eb).
 %
 % Produces error due to mismathc of arity of =.
 %
-list_eb :- 
+ex(list_eb) :- 
      a <- [x=1,y=0,=(z,3,4)],
      A <- a,
      write( a(A) ), nl.
 
-%% char_list.
+%% ex(char_list).
 %
 %  Pass a list which has a char value.
 %
-char_list :-
+ex(char_list) :-
      a <- [x=1,y=0,z=three],
      A <- a,
      <- a,
      memberchk( Z=three, A ),
      write( z(Z):a(A) ), nl.
 
-%% mix_list. 
+%% ex(mix_list). 
 %
 %  An R-list of mixed types.
 %
-mix_list :-
+ex(mix_list) :-
      a <- [x=1,y=[1,2,3],z=[[a,b,c],[d,e,f]],w=[true,false]],
      A <- a, 
      <- print(a),
      write( a(A) ), nl.
 
-%% add_element.
+%% ex(add_element).
 %
 %   Adds a third element to a list after creation.
 %
-add_element :-
+ex(add_element) :-
      x <- [a=1,b=2],
      x$c <- [3,4], 
      <- x,    % print   =   $a 3
      X <- x,
      write( 'X'(X) ), nl.   % X = [a=3.0].
 
-% singletons.
+% ex(singletons).
 %
 %  Pass an integer and a singleton number list and get them back.
 % Although in R both are passed as vectors of length on, when back in Prolog
 % the singleton list constructors are stripped, returing a single integer value in both cases.
 %  
-singletons :- 
+ex(singletons) :- 
      s <- 3,
      S <- s,
      <- s,
@@ -188,37 +209,37 @@ singletons :-
      T <- t,
      write( 'S'(S)-'T'(T) ), nl.
 
-%% assign. 
+%% ex(assign). 
 %
 % Simple assignment of an R function (+) application on 2 R values originated in Prolog.
 % 
-assign :- 
+ex(assign) :- 
      a <- 3,
      b <- [2],
      C <- a + b,
      write( 'C'(C) ), nl.
 
 
-%% assign_1.
+%% ex(assign_1).
 %
 %  Assign an R operation on matrices to a Prolog variable.
 %
-assign_1 :- 
+ex(assign_1) :- 
      a <- [[1,2,3],[4,5,6]], B <- a*3, write( 'B'(B) ), nl.
 
-%% assign_2.
+%% ex(assign_2).
 %
 %  Assign an R operation on matrices to a Prolog variable.
 %
-assign_2 :- 
+ex(assign_2) :- 
      a <- [[1,2,3],[4,5,6]], b <- 3, C <- a*b, write( 'C'(C) ), nl.
 
-%% assign_r.
+%% ex(assign_r).
 %
 %  Assign to an R variable and print it. Using c as an R variable is also a good test,
 %  as we test against c(...).
 %
-assign_r :- 
+ex(assign_r) :- 
      a <- [3],
      b <- [2],
      c <- a + b,
@@ -228,7 +249,7 @@ assign_r :-
 %
 %  Test dots in functions names via the .. mechanism.
 %
-dot_in_function_names :-
+ex(dot_in_function_names) :-
      a <- [1.1,2,3],
      <- a,
      x <- as..integer(a),
@@ -238,7 +259,7 @@ dot_in_function_names :-
 %
 %  Test dots in R variable names via the .. mechanism. Generates an error on the last goal.
 %
-dot_in_rvars :-
+ex(dot_in_rvar) :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
@@ -248,7 +269,7 @@ dot_in_rvars :-
 %
 %  A:B in R generates a vector of all integers from A to B.
 %
-semi_column :-
+ex(semi_column) :-
      z <- 1:50,
      Z <- z, 
      length( Z, Len ),
@@ -258,7 +279,7 @@ semi_column :-
 %
 %  r.eel also supports c() R function concatenation.
 %
-c_vectors :-
+ex(c_vectors) :-
      a <- c(1,2,3),
      b <- c(1,1,2,2) + c(1:4),
      <- a,
@@ -270,7 +291,7 @@ c_vectors :-
 %
 %  Test calling R functions that take no arguments (via foo(.)).
 %
-empty_args :-
+ex(empty_args) :-
      <- plot( 1:10, 1:10 ),
      findall( I, (between(1,6,I),write('.'), flush_output, sleep(1)), _ ),
      nl,
@@ -281,7 +302,7 @@ empty_args :-
 % Early versions of r..eal were not handling this example properly.  Thanks to Michiel Hildebrand for spotting this.
 % The correct resutl is =|[0.0,4.0]|=. First subtract v1 from v2 and then take power 2.
 %
-binary_op :-
+ex(binary_op) :-
      v1 <- c(1,1),
      v2 <- c(1,-1),
      P <- (v1-v2)^2,
@@ -292,7 +313,7 @@ binary_op :-
 %
 % Plots 3 points with the x-axis label showing some Greek letters (alpha/Omega).
 %
-utf :-
+ex(utf) :-
      <- plot( c(1,2,3), c(3,2,1), xlab=+[945,0'/,937] ),
      findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
      nl,
@@ -304,27 +325,12 @@ utf :-
 %  These are the time it takes to push a list through to R and the time to Pull the same
 %  (very long) list back.
 %
-plot_cpu :-
+ex(plot_cpu) :-
      plot_cpu( 1000 ).
-
-%% list_times.
-%
-% Print some timing statistics for operations on a long list of integers.
-%
-list_times :-
-     findall( I, between(1,10000000,I), List ),
-     statistics( cputime, Cpu1 ), write( cpu_1(Cpu1) ), nl,
-     l <- List,
-     a <- median( l ),
-     statistics( cputime, Cpu2 ), write( cpu_2(Cpu2) ), nl,
-     b <- median( List ),
-     statistics( cputime, Cpu3 ), write( cpu_3(Cpu3) ), nl,
-     <- a,
-     <- b.
 
 % Some tests from r_session, 
 %
-rtest :-
+ex(rtest) :-
      <- set..seed(1),
 	y <- rnorm(50),
 	<- y,
@@ -344,10 +350,25 @@ rtest :-
      r_wait,
 	devoff.
 
+%% list_times.
+%
+% Print some timing statistics for operations on a long list of integers.
+%
+list_times :-
+     findall( I, between(1,10000000,I), List ),
+     statistics( cputime, Cpu1 ), write( cpu_1(Cpu1) ), nl,
+     l <- List,
+     a <- median( l ),
+     statistics( cputime, Cpu2 ), write( cpu_2(Cpu2) ), nl,
+     b <- median( List ),
+     statistics( cputime, Cpu3 ), write( cpu_3(Cpu3) ), nl,
+     <- a,
+     <- b.
+
 % adapted from YapR
 
 % Intrinsic attributes: mode and length
-tut1 :-
+tut(tut1) :-
 	z <- 0:9,
 	<- z,
 	digits <- as..character(z),
@@ -356,7 +377,7 @@ tut1 :-
 	<- d.
 
 % changing the length of an object
-tut2 :-
+tut(tut2) :-
 	e <- numeric(.),
 	(e^[3]) <- 17,
 	<- e,
@@ -373,13 +394,13 @@ tut2 :-
      <- beta.    % 2 4 6
 
 % Getting and setting attributes
-tut3 :-
+tut(tut3) :-
 	z <- 1:100,
 	attr(z, +"dim") <- c(10,10),
 	<- z.
 
 % factors and tapply.
-tut4 :-
+tut(tut4) :-
       /*
 	 state <- c("tas", "sa",  "qld", "nsw", "nsw", "nt",  "wa",  "wa",
                   "qld", "vic", "nsw", "vic", "qld", "qld", "sa",  "tas",
@@ -400,7 +421,7 @@ tut4 :-
 	incster <- tapply(incomes, statef, stderr),
 	<- incster.
 
-tut5 :-
+tut(tut5) :-
 	z <- 1:1500,
 	dim(z) <- c(3,5,100),
 	a <- 1:24,
@@ -424,7 +445,7 @@ tut5 :-
 	w <- outer(z, a, f),
 	<- w.
 
-tut6 :-
+tut(tut6) :-
 	d <- outer(0:9, 0:9),
 	fr <- table(outer(d, d, +"-")),
 	r(plot(as..numeric(names(fr)), fr, type=+"h", xlab=+"Determinant", ylab=+"Frequency")),
