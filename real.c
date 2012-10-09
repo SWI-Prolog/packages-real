@@ -859,10 +859,9 @@ send_c_vector(term_t tvec, term_t tout)
   }
   _PL_get_arg(1, tvec, targ);
   if (PL_is_number(targ)) {
-    double *vec;
     int ints = TRUE;
 
-    for (i = 1; i < arity; i++) {
+    for (i = 0; i < arity; i++) {
       _PL_get_arg(i+1, tvec, targ);
       if (!PL_is_integer(targ)) {
 	ints = FALSE;
@@ -872,6 +871,8 @@ send_c_vector(term_t tvec, term_t tout)
       }
     }
     if (ints) {
+      int64_t *vec;
+
       PROTECT(ans = allocVector(INTSXP, arity));
       if (!ans)
 	return FALSE;
@@ -884,6 +885,8 @@ send_c_vector(term_t tvec, term_t tout)
 	vec[i] = j;
       }
     } else {
+      double *vec;
+
       PROTECT(ans = allocVector(REALSXP, arity));
       if (!ans)
 	return FALSE;
