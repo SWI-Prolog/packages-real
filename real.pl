@@ -46,6 +46,14 @@
 :- use_module(library(charsio)).
 :- use_module(library(readutil)).
 
+:- ( current_prolog_flag(windows,true) ->
+      nl, nl,
+      write( '!!!   r.eal notice: There is a known issue on Windows where <- print(x) does not print x to the terminal.' ),
+      nl, nl
+      ;
+      true
+   ).
+
 /** <module> r..eal
 
 A C-based  Prolog interface to R.
@@ -662,9 +670,25 @@ sew_code( C, [C|T], T ).
 %
 add_atom([]) --> !,
 	"\"\"".
+add_atom([0'"|Codes] ) -->
+     !,
+     [0'"],
+     add_string_as_atom( Codes ).
 add_atom(A) -->
 	{ atom_codes(A, Codes) },
 	Codes.
+
+add_string_as_atom( [] ) --> {true} .
+add_string_as_atom( [H|Tail] ) -->
+     { ( H == 0'" -> 
+               ( Tail == [] -> true; [0'\\] ),
+               [0'"]
+               ;
+               [H]
+       )
+     },
+     add_sting_as_atom( Tail ).
+
 
 add_number(El) -->
 	{ number_codes(El, Codes) },
