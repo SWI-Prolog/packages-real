@@ -687,7 +687,7 @@ add_string_as_atom( [H|Tail] ) -->
                [H]
        )
      },
-     add_sting_as_atom( Tail ).
+     add_string_as_atom( Tail ).
 
 
 add_number(El) -->
