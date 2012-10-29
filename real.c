@@ -53,8 +53,8 @@ REAL_term_type( term_t t )
          { int got_v = 0;
            int bool_vP = 0;
 
-           if ( !(got_v = PL_get_bool(t,&bool_vP)) )
-               PL_type_error("boolean",t);
+	   if ( (got_v = PL_get_bool(t,&bool_vP)) )
+               return PL_BOOL;
 
            atom_t tmp_atom = PL_new_atom("") ;
            if ( !PL_get_atom(t,&tmp_atom) )
@@ -197,7 +197,7 @@ char_vector_sexp(term_t t, size_t len, SEXP *ansP)
     size_t slen;
 
     if ( PL_get_nchars(head, &slen, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION) )
-	 { CHARACTER_DATA(ans)[index] = mkChar(s);
+      { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_LATIN1);
     } else if (PL_is_functor(head,FUNCTOR_boolop1))
     { term_t arg1 = PL_new_term_ref();
       atom_t a;
@@ -214,7 +214,7 @@ char_vector_sexp(term_t t, size_t len, SEXP *ansP)
           if (a == ATOM_false)
 	         CHARACTER_DATA(ans)[index] = mkChar("false");
           else
-            CHARACTER_DATA(ans)[index] = mkChar(s);
+            CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_LATIN1);
                  // could also use this :
                  // return PL_type_error("@atom", t );
     } else
@@ -368,7 +368,7 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
 
 	    if ( PL_get_nchars(cell, &slen, &s,
 			       CVT_ATOM|CVT_STRING|CVT_EXCEPTION) )
-	    { CHARACTER_DATA(ans)[index] = mkChar(s);
+	      { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_LATIN1);
 	    } else
 	    { /* FIXME: deallocate work */
          if ( PL_is_functor(cell, FUNCTOR_boolop1) )
@@ -443,7 +443,7 @@ pl_sexp(term_t t, SEXP *ansP)
       if ( PL_get_nchars(t, &len, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION) )
       { PROTECT(ans = NEW_CHARACTER(1));
 	     nprotect++;
-	     CHARACTER_DATA(ans)[0] = mkChar(s);
+	     CHARACTER_DATA(ans)[0] = mkCharCE(s, CE_LATIN1);
       }
       break;
     }
