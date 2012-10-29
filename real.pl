@@ -279,9 +279,9 @@ len(1000000)
 
 Many thanks to the original YapR developers for inspiration and some functions.
 
-@author		Nicos Angelopoulos
-@author		Vitor Santos Costa
-@author		Jan Wielemaker
+@author	Nicos Angelopoulos
+@author	Vitor Santos Costa
+@author	Jan Wielemaker
 @version	0:0:7, 2012/10/09
 @license	Perl Artistic License
 @see		examples/for_real.pl
@@ -298,10 +298,15 @@ init_r_env :-
 % windows is windows
 init_r_env :-
 	current_prolog_flag(windows, true),
-	catch(win_registry_get_value('HKEY_LOCAL_MACHINE/Software/R-core/R','Current Version', Version),_,fail),
-	atom_concat('HKEY_LOCAL_MACHINE/Software/R-core/R/',Version,SecondKey),
+	( HKEY='HKEY_LOCAL_MACHINE/Software/R-core/R'; 
+		HKEY='HKEY_CURRENT_USER/Software/R-core/R' ),
+	catch(win_registry_get_value(HKEY,'Current Version', Version),_,fail),
+	!,
+	atomic_list_concat([HKEY,Version],'/',SecondKey),
 	catch(win_registry_get_value(SecondKey,'InstallPath', RPath),_,fail), !,
+	setenv('R_HOME',RPath), % this probably does not help (at least not XPs)
 	% now we need to have the DLL in our path
+     % nicos: although on xp it seems that path has to already be set.
 	install_in_win32_path(RPath).
 init_r_env :-
 	% typical Linux 64 bit setup (fedora)
@@ -325,6 +330,8 @@ install_in_win32_path(RPath) :-
 install_in_win32_path(RPath) :-
 	getenv('PATH',OPath),
 	atomic_list_concat([OPath,';',RPath,'\\bin\\i386'],Path),
+     % if you have problems with R associated dlls, you might also want to add:
+	% atomic_list_concat([IPath,';',RPath,'\\modules\\i386'],Path),
 	setenv('PATH',Path).
 
 install_in_osx :-
@@ -337,10 +344,6 @@ install_in_osx :-
 	setenv('R_HOME','/Library/Frameworks/lib64/R').
 install_in_osx :-
 	setenv('R_HOME','/Library/Frameworks/lib/R').
-
-% this must be done before we load R
-:- init_r_env.
-
 
 % interface predicates
 
