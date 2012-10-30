@@ -36,6 +36,7 @@ for_real :-
 %
 ex(int) :-
      i <- [1,2,3,4],
+     <- i,
      I <- i,
      write( i(I) ), nl.
 
@@ -45,6 +46,7 @@ ex(int) :-
 %
 ex(float) :-
      f <- [1.0,2,3,4],
+     <- f,
      F <- f,
      write( f(F) ), nl.
 
@@ -55,9 +57,11 @@ ex(float) :-
 %
 ex(to_float) :-
      m <- [1,2,3,4.0],
+     <- m,
      M1 <- m,
      write( m(M1) ), nl,
      m <- [1,2,3,4.1],
+     <- m,
      M2 <- m,
      write( m(M2) ), nl.
 
@@ -66,6 +70,7 @@ ex(to_float) :-
 %
 ex(bool) :- 
      b <- [true,false,true,true],
+     <- b,
      B <- b,
      write( b(B) ), nl.
 
@@ -75,6 +80,7 @@ ex(bool) :-
 %
 ex(at_bool) :- 
      b <- [@true,@false,@true,@true],
+     <- b,
      B <- b,
      write( at_b(B) ), nl.
 
@@ -94,6 +100,7 @@ ex(bool_e) :-    % generates error
 %
 ex(bool_back) :- 
      t <- [1,2,3,4,5,1],
+     <- t,
      s <- t==1,
      <- s,
      S <- s,
@@ -161,6 +168,7 @@ ex(list_ea) :-  % produces error
 ex(list_eb) :- 
      catch( a <- [x=1,y=0,=(z,3,4)], Caught, true ),
      ( \+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail ),
+     <- a,
      A <- a,
      write( a(A) ), nl.
 
@@ -170,8 +178,8 @@ ex(list_eb) :-
 %
 ex(char_list) :-
      a <- [x=1,y=0,z=three],
-     A <- a,
      <- a,
+     A <- a,
      memberchk( Z=three, A ),
      write( z(Z):a(A) ), nl.
 
@@ -204,6 +212,7 @@ ex(add_element) :-
 %  
 ex(singletons) :- 
      s <- 3,
+     <- s,
      S <- s,
      <- s,
      t <- [3],
@@ -217,7 +226,9 @@ ex(singletons) :-
 % 
 ex(assign) :- 
      a <- 3,
+     <- a,
      b <- [2],
+     <- b,
      C <- a + b,
      write( 'C'(C) ), nl.
 
@@ -227,14 +238,22 @@ ex(assign) :-
 %  Assign an R operation on matrices to a Prolog variable.
 %
 ex(assign_1) :- 
-     a <- [[1,2,3],[4,5,6]], B <- a*3, write( 'B'(B) ), nl.
+     a <- [[1,2,3],[4,5,6]], 
+     <- a,
+     B <- a*3, 
+     write( 'B'(B) ), nl.
 
 % ex(assign_2).
 %
 %  Assign an R operation on matrices to a Prolog variable.
 %
 ex(assign_2) :- 
-     a <- [[1,2,3],[4,5,6]], b <- 3, C <- a*b, write( 'C'(C) ), nl.
+     a <- [[1,2,3],[4,5,6]], 
+     <- a,
+     b <- 3,
+     <- b,
+     C <- a*b,
+     write( 'C'(C) ), nl.
 
 % ex(assign_r).
 %
@@ -243,7 +262,9 @@ ex(assign_2) :-
 %
 ex(assign_r) :- 
      a <- [3],
+     <- a,
      b <- [2],
+     <- b,
      c <- a + b,
      <- c.
 
@@ -277,6 +298,7 @@ ex(dot_in_rvar) :-
 %
 ex(semi_column) :-
      z <- 1:50,
+     <- z,
      Z <- z, 
      length( Z, Len ),
      write( len(Len) ), nl.
@@ -287,8 +309,8 @@ ex(semi_column) :-
 %
 ex(c_vectors) :-
      a <- c(1,2,3),  % this goes via the fast route
-     b <- c(1,1,2,2) + c(1:4),
      <- a,
+     b <- c(1,1,2,2) + c(1:4),
      <- b,
      C <- a+b,
      write( 'C'(C) ), nl.
@@ -310,7 +332,9 @@ ex(empty_args) :-
 %
 ex(binary_op) :-
      v1 <- c(1,1),
+     <- v1,
      v2 <- c(1,-1),
+     <- v2,
      P <- (v1-v2)^2,
      write( P ), nl.
      % not !!! : P = [0.0, 0.0].
@@ -341,6 +365,7 @@ ex(rtest) :-
 	y <- rnorm(50),
 	<- y,
 	x <- rnorm(y),
+     <- x,
      <- x11(width=5,height=3.5),
 	<- plot(x,y),
      r_wait,
@@ -352,6 +377,7 @@ ex(rtest) :-
 	<- z,
 	cars <- [1, 3, 6, 4, 9],
 	% cars <- c(1, 3, 6, 4, 9),
+     <- cars,
 	<- pie(cars),
      r_wait,
 	devoff.
