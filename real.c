@@ -52,11 +52,11 @@ REAL_term_type( term_t t )
       case PL_ATOM:
          { int got_v = 0;
            int bool_vP = 0;
+           atom_t tmp_atom;
 
 	   if ( (got_v = PL_get_bool(t,&bool_vP)) )
                return PL_BOOL;
 
-           atom_t tmp_atom = PL_new_atom("") ;
            if ( !PL_get_atom(t,&tmp_atom) )
                   PL_type_error("atom",t);
 
@@ -193,11 +193,11 @@ char_vector_sexp(term_t t, size_t len, SEXP *ansP)
   nprotect++;
 
   for(index=0; PL_get_list(tail, head, tail); index++)
-  { char *s;
-    size_t slen;
+    { char *s;
 
-    if ( PL_get_nchars(head, &slen, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION) )
-      { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_LATIN1);
+    if ( PL_get_chars(head, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+      { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_UTF8);
+	PL_free(s);
     } else if (PL_is_functor(head,FUNCTOR_boolop1))
     { term_t arg1 = PL_new_term_ref();
       atom_t a;
@@ -244,18 +244,19 @@ named_list_sexp(term_t t, size_t len, SEXP *ansP)
 
   for(index=0; PL_get_list(tail, head, tail); index++)
   { if ( PL_is_functor(head, FUNCTOR_equal2) )
-    { char *nm;
-      size_t slen;
+    { char *nm = NULL;
       SEXP sexp;
 
       if ( PL_get_arg(1, head, name) &&
 	   PL_get_arg(2, head, value) &&
-	   PL_get_nchars(name, &slen, &nm, CVT_ATOM|CVT_STRING|CVT_EXCEPTION) &&
+	   PL_get_chars(name, &nm, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) &&
 	   pl_sexp(value, &sexp) )
-      { SET_STRING_ELT(names, index, mkChar(nm));
+	{ SET_STRING_ELT(names, index, mkCharCE(nm, CE_UTF8));
+	PL_free(nm);
 	SET_ELEMENT(ans, index, sexp);
       } else
       { /* FIXME: Destroy ans and names */
+	if (nm) PL_free(nm);
 	return FALSE;
       }
     } else
@@ -364,11 +365,12 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
 	  case PL_ATOM:
 	  case PL_STRING:
 	  { char *s;
-	    size_t slen;
 
-	    if ( PL_get_nchars(cell, &slen, &s,
-			       CVT_ATOM|CVT_STRING|CVT_EXCEPTION) )
-	      { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_LATIN1);
+	    if ( PL_get_chars(cell, &s,
+			       CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+	      { 
+		CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_UTF8);
+		PL_free(s);
 	    } else
 	    { /* FIXME: deallocate work */
          if ( PL_is_functor(cell, FUNCTOR_boolop1) )
@@ -433,17 +435,17 @@ pl_sexp(term_t t, SEXP *ansP)
     case PL_ATOM:
     case PL_STRING:
     { char *s;
-      size_t len;
 
       if ( PL_is_functor(t, FUNCTOR_boolop1) )
       {
         if ( !PL_get_arg(1, t, t) ) return PL_type_error("R-term (in pl_sexp, 9)", t);
       }
 
-      if ( PL_get_nchars(t, &len, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION) )
+      if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
       { PROTECT(ans = NEW_CHARACTER(1));
 	     nprotect++;
-	     CHARACTER_DATA(ans)[0] = mkCharCE(s, CE_LATIN1);
+	     CHARACTER_DATA(ans)[0] = mkCharCE(s, CE_UTF8);
+	     PL_free(s);
       }
       break;
     }
@@ -821,13 +823,14 @@ process_expression(const char * expression)
 
 static foreign_t
 send_r_command(term_t cmd)
-{ char *s;
-  size_t len;
-
-  if ( PL_get_nchars(cmd, &len, &s, CVT_ALL|REP_UTF8|CVT_EXCEPTION) )
-  { if ( process_expression(s) )
-      return TRUE;
-
+{ char *s = NULL;
+ 
+  if ( PL_get_chars(cmd, &s, CVT_ALL|REP_UTF8|CVT_EXCEPTION|BUF_MALLOC) )
+    { if ( process_expression(s) ) {
+	PL_free(s);
+	return TRUE;
+      }
+      PL_free(s);
     Sdprintf("Error in R\n");			/* FIXME: Exception */
     return FALSE;
   }
@@ -913,20 +916,21 @@ send_c_vector(term_t tvec, term_t tout)
 static foreign_t
 rexpr_to_pl_term(term_t in, term_t out)
 { char *s;
-  size_t len;
 
-  if ( PL_get_nchars(in, &len, &s, CVT_ALL|CVT_EXCEPTION) )
+  if ( PL_get_chars(in, &s, CVT_ALL|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
   { SEXP sexp;
 
     if ( (sexp=process_expression(s)) )
     { term_t tmp = PL_new_term_ref();
 
+      PL_free(s);
       if ( put_sexp(tmp, sexp) )
 	return PL_unify(out, tmp);
 
       return FALSE;
     } else
     { /* FIXME: Throw exception */
+      PL_free(s);
     }
   }
 
@@ -937,15 +941,15 @@ rexpr_to_pl_term(term_t in, term_t out)
 static foreign_t
 robj_to_pl_term(term_t name, term_t out)
 { char *plname;
-  size_t len;
 
-  if ( PL_get_nchars(name, &len, &plname, CVT_ALL|CVT_EXCEPTION) )
+  if ( PL_get_chars(name, &plname, CVT_ALL|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
   { SEXP s;
     int nprotect = 0;
     term_t tmp = PL_new_term_ref();
     int rc;
 
     PROTECT( s= findVar(install(plname), R_GlobalEnv) );
+    PL_free(plname);
     nprotect ++;
     if (TYPEOF(s)==SYMSXP)
       return PL_existence_error("r_variable", name);
@@ -962,19 +966,18 @@ robj_to_pl_term(term_t name, term_t out)
 
 static foreign_t
 set_r_variable(term_t rvar, term_t value)
-{ char *vname;
-  size_t len;
+{ char *vname = NULL;
   SEXP sexp;
 
-  if ( PL_get_nchars(rvar, &len, &vname, CVT_ALL|CVT_EXCEPTION) &&
+  if ( PL_get_chars(rvar, &vname, CVT_ALL|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) &&
        pl_sexp(value, &sexp) )
   {
     defineVar(Rf_install(vname), sexp, R_GlobalEnv);
     // UNPROTECT(1);				/* FIXME: Dubious */
-
+    PL_free(vname);
     return TRUE;
   }
-
+  if (vname) PL_free(vname);
   return FALSE;
 }
 
