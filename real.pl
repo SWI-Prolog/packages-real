@@ -454,13 +454,18 @@ is_rvar( Rvar ) :-
 %         RvarAtom is the atomic representation of the Rvar term.
 %
 is_rvar( RvarIn, Rvar ) :-
+	atom(RvarIn), !,
+	is_r_variable(RvarIn),
+	RvarIn = Rvar.
+is_rvar( RvarIn, Rvar ) :-
      % atom( Rvar ),
      rvar_identifier( RvarIn, Rvar, _ ),
-     r_char( Rvar, Rchar ),
-     rexpr_codes( exists(Rchar), [], Rcodes ),
+     is_r_variable( Rvar ),
+%     r_char( Rvar, Rchar ),
+%     rexpr_codes( exists(Rchar), [], Rcodes ),
      %here: rexpr_to_pl_term( Rcodes, true ).
-     rexpr_to_pl_term( Rcodes, Rbool ),
-     Rbool == true,
+%     rexpr_to_pl_term( Rcodes, Rbool ),
+%     Rbool == true,
      rexpr_codes( mode(Rvar), [], Rmode ),
      rexpr_to_pl_term( Rmode, Plmode ),
      % atom_codes( Ratom, Rmode ),
@@ -565,6 +570,7 @@ rexpr_codes(A,List) -->
      !,
      rexpr_codes(B,List).
      */
+/* atom is already protected */
 rexpr_codes(A,[]) -->
 	{ atom(A) }, !,
         add_atom(A).

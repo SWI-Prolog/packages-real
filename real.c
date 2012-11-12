@@ -771,7 +771,6 @@ put_sexp(term_t t, SEXP s)
    return TRUE;
 }
 
-
 		 /*******************************
 		 *	      START/END		*
 		 *******************************/
@@ -869,6 +868,7 @@ send_c_vector(term_t tvec, term_t tout)
       if (!PL_is_integer(targ)) {
 	ints = FALSE;
 	if (!PL_is_float(targ)) {
+	  UNPROTECT(1);
 	  return FALSE;
 	}
       }
@@ -883,8 +883,10 @@ send_c_vector(term_t tvec, term_t tout)
       for (i = 0; i < arity; i++) {
 	int64_t j;
 	_PL_get_arg(i+1, tvec, targ);
-	if (!PL_get_int64_ex(targ, &j))
+	if (!PL_get_int64_ex(targ, &j)) {
+	  UNPROTECT(1);
 	  return FALSE;
+	}
 	vec[i] = j;
       }
     } else {
@@ -902,6 +904,25 @@ send_c_vector(term_t tvec, term_t tout)
 	    return FALSE;
 	  vec[i] = j;
 	}
+      }
+    }
+  } else if (PL_is_atom(targ) || PL_is_string(targ)) {
+    char **vec;
+
+    PROTECT(ans = allocVector(STRSXP, arity));
+    if (!ans)
+      return FALSE;
+    for (i = 0; i < arity; i++) {
+      char *str;
+
+      _PL_get_arg(i+1, tvec, targ);
+      if ( PL_get_chars(targ, &str, CVT_ALL|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+	{
+	  SET_STRING_ELT(ans, i, mkCharCE(str, CE_UTF8) );
+	  PL_free(str);
+	} else {
+	UNPROTECT(1);
+	return FALSE;
       }
     }
   } else {
@@ -981,6 +1002,31 @@ set_r_variable(term_t rvar, term_t value)
   return FALSE;
 }
 
+static foreign_t
+is_r_variable(term_t t)
+{
+  SEXP name,o; 
+  char *s;
+ 
+  /* is this variable defined in R?.  */
+  if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+    { PROTECT(name = NEW_CHARACTER(1));
+      CHARACTER_DATA(name)[0] = mkCharCE(s, CE_UTF8);
+      PL_free(s);
+    }
+  else {
+    if (s) PL_free(s);
+    UNPROTECT(1);
+    return FALSE;
+  }
+
+  PROTECT(o = findVar(install(CHAR(STRING_ELT(name, 0))), R_GlobalEnv));
+  UNPROTECT(2);
+  return o != R_UnboundValue;
+}
+
+
+
 install_t
 install_real(void)
 { FUNCTOR_dot2 = PL_new_functor(PL_new_atom("."), 2);
@@ -996,4 +1042,5 @@ install_real(void)
   PL_register_foreign("rexpr_to_pl_term", 2, rexpr_to_pl_term, 0);
   PL_register_foreign("robj_to_pl_term",  2, robj_to_pl_term,  0);
   PL_register_foreign("set_r_variable",   2, set_r_variable,   0);
+  PL_register_foreign("is_r_variable",    1, is_r_variable,    0);
 }
