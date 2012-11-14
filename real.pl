@@ -418,12 +418,12 @@ r( _Other ) :-
 %
 r( Plvar, RvarIn ) :-
      var(Plvar),
-     is_rvar(RvarIn,Rvar),
+     is_rvar(RvarIn,RvarIn),
      !,
-     robj_to_pl_term( Rvar, Plvar ).
+     robj_to_pl_term( RvarIn, Plvar ).
 
 r( RvarIn, PlrExpr ) :-
-     rvar_identifier( RvarIn, _Rvar, _RAsgn ),
+     rvar_identifier( RvarIn, RvarIn, _RAsgn ),
      !,
      assignment( PlrExpr, RvarIn ).
 r( Plvar, Rexpr ) :-
@@ -459,7 +459,7 @@ is_rvar( RvarIn, Rvar ) :-
 	RvarIn = Rvar.
 is_rvar( RvarIn, Rvar ) :-
      % atom( Rvar ),
-     rvar_identifier( RvarIn, Rvar, _ ),
+     rvar_identifier( RvarIn, Rvar, RvarAtom ),
      is_r_variable( Rvar ),
 %     r_char( Rvar, Rchar ),
 %     rexpr_codes( exists(Rchar), [], Rcodes ),
