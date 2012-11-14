@@ -3,14 +3,14 @@
 :-  r(library("igraph") ).
 
 aleph :-
-    pagerank('aleph.yap').
+     pagerank('aleph.pl').
 
 pagerank(F) :-
 %     g <- graph([0,0],n=1000),
      parse(F,S),
      g <- graph(S),
      r <- page..rank(g),
-     Scores <- 'r$vector',
+     Scores <- r$vector,
      max_element(Scores, I, V),
      found(N, A, I),
      format('most linked predicate is ~a/~d, score ~2f.~n',[N,A,V]).
@@ -20,11 +20,11 @@ max_element(S, IF, VF) :-
     max_element(Els, V, 0, 0, IF, VF).
 
 max_element([], VF, IM, _, IM, VF).
-max_element(V.Els, VM, _IM, I0, IF, VF) :-
+max_element([V|Els], VM, _IM, I0, IF, VF) :-
     V > VM, !,
     I is I0+1,
     max_element(Els, V, I0, I, IF, VF).
-max_element(_.Els, VM, IM, I0, IF, VF) :-
+max_element([_|Els], VM, IM, I0, IF, VF) :-
     I is I0+1,
     max_element(Els, VM, IM, I, IF, VF).
 
@@ -57,7 +57,7 @@ process_body((B1;B2), IDA, O) :- !,
 process_body((B1->B2), IDA, O) :- !,
   process_body(B1, IDA, O) ;
   process_body(B2, IDA, O).
-process_body(B, IDA, O) :- !,
+process_body(B, IDA, O) :-
   id(B,IDB),
   ( O = IDB; O = IDA ).
 %  r(add..edges(g,c(IDA,IDB))).
