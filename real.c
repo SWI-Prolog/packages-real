@@ -695,12 +695,14 @@ put_sexp(term_t t, SEXP s)
 	  break;
 	}
         case STRSXP:
-	{ term_t head = PL_new_term_ref();
-	  term_t tail = PL_new_term_ref();
+	{ term_t tail = PL_new_term_ref();
 
 	  PL_put_nil(tail);
 	  for (i = shape[0]-1; i>=0; i--)
-	  { if ( !PL_put_atom_chars(head, CHAR(CHARACTER_DATA(s)[i])) ||
+	    { const char *chars = CHAR(CHARACTER_DATA(s)[i]);
+	      term_t head = PL_new_term_ref();
+	  
+	      if ( !PL_unify_chars(head, PL_ATOM|REP_UTF8, -1, chars) ||
 		 !PL_cons_list(tail, head, tail) )
 	      return FALSE;
 	  }
