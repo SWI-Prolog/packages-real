@@ -1,4 +1,4 @@
-%%% -*- Mode: Prolog; -*-
+%% -*- Mode: Prolog; -*-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    Author:        Nicos Angelopoulos, Vitor Santos Costa, Jan Wielemaker
 %    E-mail:        Nicos Angelopoulos <nicos@gmx.co.uk>
@@ -546,11 +546,7 @@ rexpr_codes(V,[]) -->
 	{ var(V) }, !,
 	{ throw(error(instantiation_error,r_interface)) }.
 rexpr_codes(+A,[]) -->
-	{ codes_string(A,Q) }, !,
-        "\"", Q, "\"".
-rexpr_codes(library(A),[]) -->
-	{ codes_string(A,Q) }, !,
-        "library(\"", Q, "\")".
+	add_quoted_atom(A).
 rexpr_codes(=+(A,B),List) -->
      !,
      rexpr_codes((A = +B),List).
@@ -572,8 +568,12 @@ rexpr_codes(A,List) -->
      */
 /* atom is already protected */
 rexpr_codes(A,[]) -->
-	{ atom(A) }, !,
+	{ atom(A), is_rvar(A, _) }, !,
         add_atom(A).
+rexpr_codes(A,[]) -->
+	/* string */
+	{ atom(A) }, !,
+        add_quoted_atom(A).
 rexpr_codes(A,[]) -->
 	{ number(A) }, !,
 	add_number(A).
@@ -581,12 +581,11 @@ rexpr_codes(A^List,[]) -->
 	{ atom(A), is_list(List) }, !,
 	add_atom(A),
      indices_to_string( List ).
-rexpr_codes(A$B,TmpRs) -->
+rexpr_codes(A$B,TmpA) -->
      !,
      rexpr_codes( A, TmpA ),
      "$",
-     rexpr_codes( B, TmpB ),
-     {append(TmpA,TmpB,TmpRs)}.
+     add_atom( B ).
 rexpr_codes(A1..A2,[]) --> { atom(A1) }, !,
 	add_atom(A1),
 	".",
@@ -679,23 +678,49 @@ sew_code( C, [C|T], T ).
 %
 add_atom([]) --> !,
 	"\"\"".
-add_atom([0'"|Codes] ) -->
+add_atom([0'"|Codes] ) --> % "' fix colouring
      !,
-     [0'"],
+     [0'"],  % "'
      add_string_as_atom( Codes ).
 add_atom(A) -->
-	{ atom_codes(A, Codes) },
-	Codes.
+    { atom_codes(A, Codes) },
+    Codes.
 
-add_string_as_atom( [] ) --> {true} .
+%
+% a nil atom in Prolog is likely to be the empty string in R.
+%
+add_quoted_atom(A) -->
+	{ atom(A), !, atom_codes(A, Codes) },
+	"\"",
+	add_quoted_codes0( Codes ).
+add_quoted_atom( Codes ) -->
+	"\"",
+	add_quoted_codes0( Codes ).
+
+% check if they are already quoted first
+add_quoted_codes0( [0'"|Codes] ) --> % "' fix colouring
+     !,
+     add_string_as_atom( Codes ).
+add_quoted_codes0( Codes ) -->
+	add_quoted_codes( Codes ).
+
+add_quoted_codes([]) --> !,
+	"\"".
+add_quoted_codes([0'"|Codes] ) --> % "' fix colouring
+     !,
+     "\\\"",  % "'
+	add_quoted_codes( Codes ).
+add_quoted_codes([C|Codes]) -->
+    [C],
+     add_quoted_codes( Codes ).    
+
+add_string_as_atom( [] ) --> [] .
 add_string_as_atom( [H|Tail] ) -->
-     { ( H == 0'" -> 
-               ( Tail == [] -> true; [0'\\] ),
-               [0'"]
+     ( { H =:= "\"" } -> 
+               ( { Tail == [] } -> "\"" ; "\\\"" )
                ;
                [H]
-       )
-     },
+     ),
      add_string_as_atom( Tail ).
 
 

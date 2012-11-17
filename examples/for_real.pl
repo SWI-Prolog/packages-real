@@ -286,10 +286,10 @@ ex(dot_in_rvar) :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
-     ( <- print('a..b') -> % produces an error, as it should
-          fail
-          ;
+     ( <- print('a..b') -> % it should just print the string a..b
           true
+          ;
+          fail
      ).
 
 % semi_column.
@@ -539,6 +539,6 @@ plot_cpu( Factor ) :-
      push <- Push,
      pull <- Pull,
      write( plotting(Pull,Push) ), nl,
-     <- plot( points, pull, ylab ='"pull & push (red) - in seconds"' ),
+     <- plot( points, pull, ylab ='pull & push (red) - in seconds' ),
      r_char( red, Red ),
      <- points( points, push, col=Red ).

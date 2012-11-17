@@ -195,9 +195,8 @@ char_vector_sexp(term_t t, size_t len, SEXP *ansP)
   for(index=0; PL_get_list(tail, head, tail); index++)
     { char *s;
 
-    if ( PL_get_chars(head, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+    if ( PL_get_chars(head, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
       { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_UTF8);
-	PL_free(s);
     } else if (PL_is_functor(head,FUNCTOR_boolop1))
     { term_t arg1 = PL_new_term_ref();
       atom_t a;
@@ -252,8 +251,8 @@ named_list_sexp(term_t t, size_t len, SEXP *ansP)
 	   PL_get_chars(name, &nm, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) &&
 	   pl_sexp(value, &sexp) )
 	{ SET_STRING_ELT(names, index, mkCharCE(nm, CE_UTF8));
-	PL_free(nm);
 	SET_ELEMENT(ans, index, sexp);
+	PL_free(nm);
       } else
       { /* FIXME: Destroy ans and names */
 	if (nm) PL_free(nm);
@@ -367,10 +366,9 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
 	  { char *s;
 
 	    if ( PL_get_chars(cell, &s,
-			       CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+			       CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
 	      { 
 		CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_UTF8);
-		PL_free(s);
 	    } else
 	    { /* FIXME: deallocate work */
          if ( PL_is_functor(cell, FUNCTOR_boolop1) )
@@ -441,11 +439,10 @@ pl_sexp(term_t t, SEXP *ansP)
         if ( !PL_get_arg(1, t, t) ) return PL_type_error("R-term (in pl_sexp, 9)", t);
       }
 
-      if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+      if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
       { PROTECT(ans = NEW_CHARACTER(1));
 	     nprotect++;
 	     CHARACTER_DATA(ans)[0] = mkCharCE(s, CE_UTF8);
-	     PL_free(s);
       }
       break;
     }
@@ -747,7 +744,8 @@ put_sexp(term_t t, SEXP s)
 		return FALSE;
 	      break;
 	    case STRSXP:
-	      if ( !PL_put_atom_chars(nest_head, CHAR(CHARACTER_DATA(s)[c])) )
+	      nest_head = PL_new_term_ref();
+	      if ( !PL_unify_chars(nest_head,  PL_ATOM|REP_UTF8, -1, CHAR(CHARACTER_DATA(s)[c])) )
 		return FALSE;
 	      break;
 	    case LGLSXP:
@@ -909,7 +907,6 @@ send_c_vector(term_t tvec, term_t tout)
       }
     }
   } else if (PL_is_atom(targ) || PL_is_string(targ)) {
-    char **vec;
 
     PROTECT(ans = allocVector(STRSXP, arity));
     if (!ans)
@@ -918,10 +915,9 @@ send_c_vector(term_t tvec, term_t tout)
       char *str;
 
       _PL_get_arg(i+1, tvec, targ);
-      if ( PL_get_chars(targ, &str, CVT_ALL|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+      if ( PL_get_chars(targ, &str, CVT_ALL|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
 	{
 	  SET_STRING_ELT(ans, i, mkCharCE(str, CE_UTF8) );
-	  PL_free(str);
 	} else {
 	UNPROTECT(1);
 	return FALSE;
@@ -965,14 +961,13 @@ static foreign_t
 robj_to_pl_term(term_t name, term_t out)
 { char *plname;
 
-  if ( PL_get_chars(name, &plname, CVT_ALL|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+  if ( PL_get_chars(name, &plname, CVT_ALL|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
   { SEXP s;
     int nprotect = 0;
     term_t tmp = PL_new_term_ref();
     int rc;
 
     PROTECT( s= findVar(install(plname), R_GlobalEnv) );
-    PL_free(plname);
     nprotect ++;
     if (TYPEOF(s)==SYMSXP)
       return PL_existence_error("r_variable", name);
@@ -996,11 +991,12 @@ set_r_variable(term_t rvar, term_t value)
        pl_sexp(value, &sexp) )
   {
     defineVar(Rf_install(vname), sexp, R_GlobalEnv);
-    // UNPROTECT(1);				/* FIXME: Dubious */
     PL_free(vname);
+    // UNPROTECT(1);				/* FIXME: Dubious */
     return TRUE;
   }
-  if (vname) PL_free(vname);
+  if (vname) 
+    PL_free(vname);
   return FALSE;
 }
 
@@ -1011,13 +1007,11 @@ is_r_variable(term_t t)
   char *s;
  
   /* is this variable defined in R?.  */
-  if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_MALLOC|REP_UTF8) )
+  if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
     { PROTECT(name = NEW_CHARACTER(1));
       CHARACTER_DATA(name)[0] = mkCharCE(s, CE_UTF8);
-      PL_free(s);
     }
   else {
-    if (s) PL_free(s);
     UNPROTECT(1);
     return FALSE;
   }
