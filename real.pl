@@ -586,10 +586,10 @@ rexpr_codes(A$B,TmpA) -->
      rexpr_codes( A, TmpA ),
      "$",
      add_atom( B ).
-rexpr_codes(A1..A2,[]) --> { atom(A1) }, !,
+rexpr_codes(A1..A2,TmpRs) --> { atom(A1) }, !,
 	add_atom(A1),
 	".",
-	rexpr_codes(A2,[]).
+	rexpr_codes(A2,TmpRs).
 % R function definition
 rexpr_codes((A1 :- A2), TmpRs) -->
 	!,
@@ -611,15 +611,28 @@ rexpr_codes(S,TmpRs) -->
 	{ S =.. [F|Args], F \== '.' },
 	add_atom(F),
 	"(",
-	rexprs_codes(Args, first,TmpRs),
+	rexprs_codes(Args, 1, F, TmpRs),
 	")".
 
-rexprs_codes([], _, []) --> [].
-rexprs_codes([Arg|Args], First, TmpRs) -->
-	( { var(First) } -> "," ; "" ),
-	rexpr_codes(Arg,TmpA),
-	rexprs_codes(Args, _,TmpAs),
-     {append(TmpA, TmpAs, TmpRs)}.
+rexprs_codes([], _, _, []) --> [].
+rexprs_codes([Arg|Args], N, Func, TmpRs) -->
+	( { N == 1 } -> "" ; " ," ),
+	rexpr_arg(Arg, N, Func, TmpA),
+	{ N1 is N+1 },
+	rexprs_codes(Args, N1, Func, TmpAs),
+	{append(TmpA, TmpAs, TmpRs)}.
+
+%
+% handle string arguments, like library(...
+% 
+rexpr_arg(Arg, N, Func, []) -->
+	{ literal(N, Func) },
+	add_quoted_atom( Arg ), !.
+rexpr_arg(Arg, _N, _Func, TmpA) -->
+	rexpr_codes(Arg, TmpA).
+
+literal(1, library).
+literal(1, require).
 
 indices_to_string( List ) -->
 	"[",
