@@ -286,7 +286,7 @@ ex(dot_in_rvar) :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
-     ( <- print('a..b') -> % it should just print the string a..b
+     ( <- print('a..b') -> 
           true
           ;
           fail
@@ -344,10 +344,10 @@ ex(binary_op) :-
 % Plots 3 points with the x-axis label showing some Greek letters (alpha/Omega).
 %
 ex(utf) :-
-     <- plot( c(1,2,3), c(3,2,1), xlab=+[945,0'/,937] ),
-     findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
-     nl,
-     <- dev..off(.).
+	<- plot( c(1,2,3), c(3,2,1), xlab= +[945,0'/,937] ), %'
+	findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
+	nl,
+	<- dev..off(.).
 
 % plot_cpu.
 %

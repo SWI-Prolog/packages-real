@@ -109,7 +109,9 @@ Prolog constructs are converted by the library as follows:
      * Lists of lists of numbers are converted to matrices. All first level lists must have the same length.
      * Filenames must be given as Prolog strings.
      * R specific operators (eg. %*% should be quoted in Prolog.
-     * expressions that pose difficulty in translation can alwasy be passed as Prolog atoms or strings eg. 'inp$id'
+     * If you want to ensure that you quote a string, use +String.
+     * If you want to ensure that you do not quote a string, use -String.
+     * expressions that pose difficulty in translation can always be passed as unquoted Prolog atoms or strings.
 
 
 ---++ Data transfers
@@ -264,7 +266,7 @@ With a generous stack, huge objects can be passed between the two systems.
 
 ==
 
-κρότος;~/sureal% yap -s80000 -f -g "ensure_loaded(library(real))"
+κρότος;~/sureal% yap -f -g "ensure_loaded(library(real))"
 YAP 6.3.0 (x86_64-linux): Fri Nov 11 16:06:00 CET 2011
 MYDDAS version MYDDAS-0.9.1
 ?- 
@@ -394,24 +396,19 @@ real( 0:0:7, 2012/10/09 ).
 %   Nickname for <-(R).
 %
 r( RvarIn ) :-
-     is_rvar( RvarIn, _Rvar ),
-     rexpr_codes( RvarIn, [], RvCodes ),
-     atom_codes( Rvar, RvCodes ),
-     !,
-     r( print(Rvar) ).
+	is_rvar( RvarIn, _Rvar ),
+	rexpr_codes( RvarIn, [], RvCodes ),
+	!,
+	append(["print( ",RvCodes," )"], CmdCodes),
+	send_r_command( CmdCodes ).
 r( R ) :-
-     rexpr_codes( R, TmpRs, Rcodes ),
-     !,
+	catch( rexpr_codes(R,TmpRs,Rcodes,[]), _, fail ),
+	!,
 	send_r_command(Rcodes),
-     maplist( r_remove, TmpRs ).
-r( R ) :-
-     catch( rexpr_codes(R,TmpRs,Rcodes,[]), _, fail ),
-     !,
-	send_r_command(Rcodes),
-     maplist( r_remove, TmpRs ).
+	maplist( r_remove, TmpRs ).
 r( _Other ) :-
-     write( user_error, 'Cannot use input to <-/1. \n ' ), nl,
-     fail.
+	write( user_error, 'Cannot use input to <-/1. \n ' ), nl,
+	fail.
 
 %%	r( ?L, +R ).
 %    Nickname for <-(L,R).
@@ -459,7 +456,7 @@ is_rvar( RvarIn, Rvar ) :-
 	RvarIn = Rvar.
 is_rvar( RvarIn, Rvar ) :-
      % atom( Rvar ),
-     rvar_identifier( RvarIn, Rvar, RvarAtom ),
+     rvar_identifier( RvarIn, Rvar, _RvarAtom ),
      is_r_variable( Rvar ),
 %     r_char( Rvar, Rchar ),
 %     rexpr_codes( exists(Rchar), [], Rcodes ),
@@ -475,16 +472,16 @@ is_rvar( RvarIn, Rvar ) :-
 %%	r_char( +Atomic, +RcharAtom ).
 %   Wrap an atomic value with double quotes so it can pass as an R char type.
 %
-r_char( Atomic, Rchar ) :-
-     atomic( Atomic ),
-     !,
-     atomic_list_concat( ['"',Atomic,'"'], Rchar ).
+%% r_char( Atomic, Rchar ) :-
+%%      atomic( Atomic ),
+%%      !,
+%%      atomic_list_concat( ['"',Atomic,'"'], Rchar ).
 r_char( Rchar, Rchar ).
 
 %%	devoff.
 %  Close the current plot devise without any reporting. Short for <- invisible('dev.off'()').
 devoff :-
-     <- invisible('dev.off()').
+	<- invisible(-'dev.off()').
 
 %% r_wait
 %         Currently only waiting for Return to be pressed.
@@ -514,7 +511,7 @@ assignment(PlDataIn, Rvar) :-
 
 assignment( Rexpr, Rvar ) :-
      rvar_identifier( Rvar, _Rvar, RAssgn ),
-     rexpr_codes( '<-'(RAssgn,Rexpr), TmpRs, Rcodes ),
+     rexpr_codes( '<-'(-RAssgn,Rexpr), TmpRs, Rcodes ),
      !,
      send_r_command( Rcodes ),
      maplist( r_remove, TmpRs ).
@@ -524,92 +521,101 @@ pl_data( PlData, PlData ) :-
 /*
 pl_data( PlDataIn, PlData ) :-
      PlDataIn =.. [c|PlData].
-     */
+*/
 
 rvar_identifier( Rvar, Rvar, Rvar ) :-
-    atom( Rvar ).
+	atom( Rvar ).
 rvar_identifier( A..B, Atom, Atom ) :-
-     atom(A), 
-     rvar_identifier( B, Batom, _ ),
-     atomic_list_concat( [A,'.',Batom], Atom ).
+	atom(A), 
+	rvar_identifier( B, Batom, _ ),
+	atomic_list_concat( [A,'.',Batom], Atom ).
 rvar_identifier( A$B, A, C ) :-
-     atom(A), 
-     rvar_identifier( B, Bid, _ ),
-     term_to_atom( A$Bid, C ).
+	atom(A), 
+	rvar_identifier( B, Bid, _ ),
+	term_to_atom( A$Bid, C ).
 rvar_identifier( A^B, A, C ) :-
-     atom( A ),
-     is_list( B ),
-     term_to_atom( B, Batom ),
-     atom_concat( A, Batom, C ).
+	atom( A ),
+	is_list( B ),
+	term_to_atom( B, Batom ),
+	atom_concat( A, Batom, C ).
 
 rexpr_codes(V,[]) -->
 	{ var(V) }, !,
 	{ throw(error(instantiation_error,r_interface)) }.
 rexpr_codes(+A,[]) -->
-	add_quoted_atom(A).
+	!,
+	{ atom(A) -> format(codes(S), '~a', [A]) ; format(codes(S), "~s", [A]) },
+	"\"", S, "\"".
+rexpr_codes(-A,[]) -->
+	!,
+	{ atom(A) -> format(codes(S), '~a', [A]) ; format(codes(S), "~s", [A]) },
+	S.
 rexpr_codes(=+(A,B),List) -->
-     !,
-     rexpr_codes((A = +B),List).
+	!,
+	rexpr_codes((A = +B),List).
 rexpr_codes(Array,TmpRs) -->
 	{ Array = [_|_] },
 	array_to_c(Array,TmpV), !,
-     { TmpRs = [TmpV] }.
+	{ TmpRs = [TmpV] }.
 rexpr_codes(A,[]) -->
-     { functor(A,Name,1),arg(1,A,'.')}, !,
-       add_atom(Name), "()".
+	{ functor(A,Name,1),arg(1,A,'.')}, !,
+	add_atom(-Name), "()".
 /*   This can be used if we want c() to be passed by lists, 
-     but it currently does not accommodate c(1:3,1:3)
+but it currently does not accommodate c(1:3,1:3)
 rexpr_codes(A,List) -->
-     { 
-       A =.. [c|B], B \== []
-     },
-     !,
-     rexpr_codes(B,List).
-     */
+	{ 
+         A =.. [c|B], B \== []
+        },
+	!,
+	rexpr_codes(B,List).
+        */
 /* atom is already protected */
 rexpr_codes(A,[]) -->
 	{ atom(A), is_rvar(A, _) }, !,
-        add_atom(A).
+        add_atom(-A).
 rexpr_codes(A,[]) -->
 	/* string */
 	{ atom(A) }, !,
-        add_quoted_atom(A).
+	add_atom(A).
 rexpr_codes(A,[]) -->
 	{ number(A) }, !,
 	add_number(A).
-rexpr_codes(A^List,[]) -->
-	{ atom(A), is_list(List) }, !,
-	add_atom(A),
-     indices_to_string( List ).
+rexpr_codes(A^List, TmpRs) -->
+	{ is_list(List) }, !,
+	rexpr_unquoted(A, TmpRs),
+	indices_to_string( List ).
 rexpr_codes(A$B,TmpA) -->
-     !,
-     rexpr_codes( A, TmpA ),
-     "$",
-     add_atom( B ).
-rexpr_codes(A1..A2,TmpRs) --> { atom(A1) }, !,
-	add_atom(A1),
+	!,
+	rexpr_unquoted( A, TmpA ),
+	"$",
+	add_atom( -B ).
+rexpr_codes(A1..A2,TmpRs) --> !,
+	rexpr_unquoted(A1, TmpRs1),
 	".",
-	rexpr_codes(A2,TmpRs).
+	rexpr_unquoted(A2, TmpRs2),
+        { append(TmpRs1, TmpRs2, TmpRs) }.
 % R function definition
 rexpr_codes((A1 :- A2), TmpRs) -->
 	!,
 	rexpr_codes(A1,TmpA1),
 	" ",
 	rexpr_codes(A2,TmpA2),
-     {append(TmpA1,TmpA2,TmpRs)}.
+	{append(TmpA1,TmpA2,TmpRs)}.
 rexpr_codes(S,TmpRs) -->
 	{ functor(S, Na, 2),  
-       binary(Na), atom_codes(Na,NaS),
-       arg(1,S,A1), arg(2,S,A2)
-     }, !,
-     { ( (Na=(<-);Na=(=)) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
-     Lft, rexpr_codes(A1,TmpA1),
+	  binary(Na), atom_codes(Na,NaS),
+          arg(1,S,A1), arg(2,S,A2)
+        }, !,
+        { ( (Na=(<-);Na=(=)) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
+        Lft,
+	rexpr_codes(A1,TmpA1),
 	" ", NaS, " ",
-	rexpr_codes(A2,TmpA2), Rgt,
-     {append(TmpA1,TmpA2,TmpRs)}.
+	rexpr_codes(A2,TmpA2),
+	Rgt,
+        {append(TmpA1,TmpA2,TmpRs)}.
 rexpr_codes(S,TmpRs) -->
 	{ S =.. [F|Args], F \== '.' },
-	add_atom(F),
+	add_atom( -F ),
 	"(",
 	rexprs_codes(Args, 1, F, TmpRs),
 	")".
@@ -617,19 +623,17 @@ rexpr_codes(S,TmpRs) -->
 rexprs_codes([], _, _, []) --> [].
 rexprs_codes([Arg|Args], N, Func, TmpRs) -->
 	( { N == 1 } -> "" ; " ," ),
-	rexpr_arg(Arg, N, Func, TmpA),
+	rexpr_codes(Arg, TmpA),
 	{ N1 is N+1 },
 	rexprs_codes(Args, N1, Func, TmpAs),
 	{append(TmpA, TmpAs, TmpRs)}.
 
-%
-% handle string arguments, like library(...
-% 
-rexpr_arg(Arg, N, Func, []) -->
-	{ literal(N, Func) },
-	add_quoted_atom( Arg ), !.
-rexpr_arg(Arg, _N, _Func, TmpA) -->
-	rexpr_codes(Arg, TmpA).
+rexpr_unquoted(A, TmpRs) -->
+	( { atom(A) } -> 
+	    add_atom(-A), { TmpRs = [] }
+	; 
+	  rexpr_codes(A , TmpRs)
+        ).
 
 literal(1, library).
 literal(1, require).
@@ -669,14 +673,14 @@ codes_string([],[]).
 codes_string(.(C,Cs),Q) :-
 	integer(C),
 	% <=nicos.  char_type(C,ascii),
-     % <=nicos.   \+ char_type(C,cntrl),
-     char_my_utf8(C),
-     sew_code( C, Q, T ),
+        % <=nicos.   \+ char_type(C,cntrl),
+	char_my_utf8(C),
+	sew_code( C, Q, T ),
 	codes_string(Cs,T).
 
 char_my_utf8( C ) :-
 	char_type(C,graph),
-     !.
+	!.
 char_my_utf8( C ) :-
 	char_type(C,white).
 
@@ -691,50 +695,37 @@ sew_code( C, [C|T], T ).
 %
 add_atom([]) --> !,
 	"\"\"".
-add_atom([0'"|Codes] ) --> % "' fix colouring
-     !,
-     [0'"],  % "'
-     add_string_as_atom( Codes ).
+add_atom( -A ) --> 
+	!,
+	{ format(codes(Out), '~a', [A]) },
+	Out.
+add_atom([C|Codes] ) --> 
+	!,
+	{ format(codes(Out), '"~s"', [C|Codes]) },
+	Out.
+% hande atoms explicitly quoted (r_char)
 add_atom(A) -->
-    { atom_codes(A, Codes) },
-    Codes.
+	{ atom_codes(A, Codes) },
+	check_quoted(A, Codes).
+	
+check_quoted(true, _) --> !, "TRUE".	
+check_quoted(false, _) --> !, "FALSE".
+check_quoted(A, _) --> { is_r_variable(A) }, !,
+	{ format(codes(Codes), '~a', [A]) },
+	Codes.	
+check_quoted(A, _) -->
+	{ format(codes(Codes), '"~a"', [A]) },
+	Codes.
 
-%
-% a nil atom in Prolog is likely to be the empty string in R.
-%
-add_quoted_atom(A) -->
-	{ atom(A), !, atom_codes(A, Codes) },
-	"\"",
-	add_quoted_codes0( Codes ).
-add_quoted_atom( Codes ) -->
-	"\"",
-	add_quoted_codes0( Codes ).
-
-% check if they are already quoted first
-add_quoted_codes0( [0'"|Codes] ) --> % "' fix colouring
-     !,
-     add_string_as_atom( Codes ).
-add_quoted_codes0( Codes ) -->
-	add_quoted_codes( Codes ).
-
-add_quoted_codes([]) --> !,
-	"\"".
-add_quoted_codes([0'"|Codes] ) --> % "' fix colouring
-     !,
-     "\\\"",  % "'
-	add_quoted_codes( Codes ).
-add_quoted_codes([C|Codes]) -->
-    [C],
-     add_quoted_codes( Codes ).    
 
 add_string_as_atom( [] ) --> [] .
 add_string_as_atom( [H|Tail] ) -->
-     ( { H =:= "\"" } -> 
-               ( { Tail == [] } -> "\"" ; "\\\"" )
-               ;
-               [H]
-     ),
-     add_string_as_atom( Tail ).
+	( { H =:= "\"" } -> 
+            ( { Tail == [] } -> "\"" ; "\\\"" )
+        ;
+        [H]
+        ),
+	add_string_as_atom( Tail ).
 
 
 add_number(El) -->

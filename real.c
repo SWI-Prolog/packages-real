@@ -808,8 +808,9 @@ process_expression(const char * expression)
   int hadError;
   ParseStatus status;
 
-  PROTECT(tmp = mkString(expression));
-  PROTECT(e = R_ParseVector(tmp, 1, &status, R_NilValue));
+  //  PROTECT(tmp = mkString(expression));
+  PROTECT( tmp = ScalarString(mkCharCE(expression, CE_UTF8)) );
+  PROTECT( e = R_ParseVector(tmp, 1, &status, R_NilValue) );
   /* FIXME: Check status */
   val = R_tryEval(VECTOR_ELT(e, 0), R_GlobalEnv, &hadError);
   UNPROTECT(2);
