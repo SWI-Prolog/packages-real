@@ -20,8 +20,10 @@
 	op(950,fx,<-),
 	op(950,yfx,<-),
      (<-)/1,
-     real_version/2,
      real_citation/2,
+     real_debug/0,
+     real_nodebug/0,
+     real_version/3,
      r_char/2,
      devoff/0,
      r_wait/0,
@@ -478,17 +480,31 @@ r_wait :-
      write('Press Return to continue...'), nl,
      read_line_to_codes(user_input, _).
 
-%% real_version( Version,  Date ).
+%% real_debug.
+%
+%  A common (SWI/Yap) interface for starting debugging messages for r..eal.
+%
+real_debug :-
+     debug(real).
+
+%% real_debug.
+%
+%  A common (SWI/Yap) interface for stopping debugging messages for r..eal.
+%
+real_nodebug :-
+     nodebug(real).
+
+%% real_version( Version,  Date, Note ).
 %          Version and release date.
 %
-real_version( 0:0:9, date(2012,12,19) ).   % the oliebollen version
+real_version( 0:0:9, date(2012,12,19), oliebollen ).   % the oliebollen version
 
 %% real_citation( -Atom, -Bibterm ).
 % Succeeds once for each publication related to this library. Atom is the atom representation
 % suitable for printing while Bibterm is a bibtex(Type,Key,Pairs) term of the same publication.
 % Produces all related publications on backtracking.
 real_citation( Atom, bibtex(Type,Key,Pairs) ) :-
-    Atom = 'Integrative functional statistics in logic programming \n Nicos Angelopoulos, Vítor Santos Costa, Joao Azevedo, Jan Wielemaker, Rui Camacho and Lodewyk Wessels \n Proc. of Practical Aspects of Declarative Languages (PADL 2013). Accepted (January, 2013. Rome, Italy).',
+    Atom = 'Integrative functional statistics in logic programming \nNicos Angelopoulos, Vítor Santos Costa, Joao Azevedo, Jan Wielemaker, Rui Camacho and Lodewyk Wessels \nProc. of Practical Aspects of Declarative Languages (PADL 2013). Accepted (January, 2013. Rome, Italy).',
     Type = inproceedings,
     Key  = 'AngelopoulosN+2012',
     Pairs = [
