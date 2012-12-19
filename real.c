@@ -82,7 +82,7 @@ REAL_term_type( term_t t )
 	            return PL_type_error("R-term (in type, 3)", t);
 
            if ( a == ATOM_true || a == ATOM_false )
-              return PL_ATOM;
+              return PL_BOOL;
             else
                return PL_TERM;
          }
@@ -106,11 +106,29 @@ logical_vector_sexp(term_t t, size_t len, SEXP *ansP)
   for(index=0; PL_get_list(tail, head, tail); index++)
   { int val;
 
-    if ( PL_get_bool_ex(head, &val) )
+    if ( PL_get_bool(head, &val) )
     { LOGICAL_DATA(ans)[index] = val;
     } else
-    { /* FIXME: Destroy ans */
-      return FALSE;
+    { 
+       term_t arg1 = PL_new_term_ref();
+       atom_t a;
+       if (PL_is_functor(head,FUNCTOR_boolop1) && PL_get_arg(1,head,arg1) && PL_get_atom(arg1,&a) 
+               && (a == ATOM_true || a == ATOM_false)  )
+          { 
+            if ( a == ATOM_true ) 
+               LOGICAL_DATA(ans)[index] = 1;     // FIXME: use the R T/F values here
+           else if (a == ATOM_false ) 
+               LOGICAL_DATA(ans)[index] = 0;
+           else                                // it should never come here
+           { UNPROTECT(nprotect);
+             return FALSE;
+           }
+          } else
+          {
+               /* FIXME? Destroy ans */
+               UNPROTECT(nprotect);
+	            return FALSE;
+          }
     }
   }
 
@@ -323,7 +341,7 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
     for(row_i=0; PL_get_list(rows, cols, rows); row_i++)
     { if ( list_length(cols) != headlen )
       { /*FIXME: call the doctor*/;
-         printf( "Warning: mismatch of matrix column legths \n" );
+         printf( "Warning: mismatch of matrix column lengths \n" );
       }
 
       for(col_i=0; PL_get_list(cols, cell, cols); col_i++)
@@ -811,7 +829,20 @@ process_expression(const char * expression)
   //  PROTECT(tmp = mkString(expression));
   PROTECT( tmp = ScalarString(mkCharCE(expression, CE_UTF8)) );
   PROTECT( e = R_ParseVector(tmp, 1, &status, R_NilValue) );
-  /* FIXME: Check status */
+  
+  if (status != PARSE_OK) 
+     {   
+     Sdprintf("Error: %d, in parsing R expression.\n", status );
+     /* do not continue with R_tryEval() */
+         UNPROTECT(2);
+         /* PL_unify_term(except, PL_FUNCTOR_CHARS, "r_expression_syntax_error", 2, PL_CHARS, expression, PL_INTEGER, status ); */
+                  /*FIXME: return the expression too (as atom) */
+                  /* PL_FUNCTOR_CHARS, "r_expression_syntax_error", 2, PL_CHARS, "atom", PL_TERM, to; */
+         /* return PL_raise_exception(except); */
+         return NULL;
+     }
+
+  /* FIXME: Check status (nicos: it seems to be always 1 though? */
   val = R_tryEval(VECTOR_ELT(e, 0), R_GlobalEnv, &hadError);
   UNPROTECT(2);
 
@@ -820,10 +851,10 @@ process_expression(const char * expression)
   return NULL;
 }
 
-
 static foreign_t
 send_r_command(term_t cmd)
 { char *s = NULL;
+  term_t except = PL_new_term_ref();
  
   if ( PL_get_chars(cmd, &s, CVT_ALL|REP_UTF8|CVT_EXCEPTION|BUF_MALLOC) )
     { if ( process_expression(s) ) {
@@ -831,18 +862,15 @@ send_r_command(term_t cmd)
 	return TRUE;
       }
       PL_free(s);
-    Sdprintf("Error in R\n");			/* FIXME: Exception */
+    if( PL_unify_term(except, PL_FUNCTOR_CHARS, "real_error", 1, PL_CHARS, "correspondence") )
+      return PL_raise_exception(except) ;
     return FALSE;
+    /* return PL_representation_error("Error in R\n"); */
   }
 
     Sdprintf("Error in get_nchars\n");			/* FIXME: Exception */
   return FALSE;
 }
-
-/*
-    Nicos thinks it is best to leave c() to the prolog interface.
-    However, Vitor was concerned  with memory consumption. 
-    So Nicos have to add this back... */
 
 // fast copy of a Prolog vector to R
 static foreign_t

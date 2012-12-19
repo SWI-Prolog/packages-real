@@ -29,9 +29,10 @@ for_real :-
      write( 'All done.' ), nl.
 
 
-% int.
+% ex(int).
 %
-%  Pass the salt please. The most basic example: pass a Prolog list of integers to an R variable 
+%  Pass the salt please. 
+%  The most basic example: pass a Prolog list of integers to an R variable 
 %  and then back again to a Prolog variable.
 %
 ex(int) :-
@@ -50,9 +51,10 @@ ex(float) :-
      F <- f,
      write( f(F) ), nl.
 
-% float.
+% ex( float ).
 %
-%  Pass a mixed Prolog list of integers and floats to an R variable and then back again to a Prolog variable.
+%  Pass a mixed Prolog list of integers and floats to an R variable and
+%  then back again to a Prolog variable.
 %  The returning list is occupied by floats as is the R variable.
 %
 ex(to_float) :-
@@ -65,7 +67,7 @@ ex(to_float) :-
      M2 <- m,
      write( m(M2) ), nl.
 
-% bool.
+% ex(bool).
 %
 %
 ex(bool) :- 
@@ -84,14 +86,19 @@ ex(at_bool) :-
      B <- b,
      write( at_b(B) ), nl.
 
-%  ex(bool_e).
+%  ex(bool_f).
 %
-%   This generates an error since there is a non boolean value in a list that looks like 
-%   containing boolean values.
+%   This fails since there is a non boolean value in a list.
 %
-ex(bool_e) :-    % generates error
-     catch(b <- [true,false,true,true,other], Caught, true),
-     (\+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail).
+%   On SWI this fails...
+%   On YAP this throuws exception....
+%
+ex(bool_f) :-
+     ( catch(b <- [true,false,true,true,other],_,fail) ->
+          fail
+          ;
+          true
+     ).
 
 %  ex(bool_back).
 %
@@ -155,8 +162,7 @@ ex(list) :-
 % Produces error due to name of constructor: -.
 %
 ex(list_ea) :-  % produces error
-     catch( a <- [x=1,y=0,z-3], Caught, true ),
-     ( \+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail ),
+     catch_controlled( a <- [x=1,y=0,z-3] ),
      <- a,
      A <- a,
      write( a(A) ), nl.
@@ -166,8 +172,7 @@ ex(list_ea) :-  % produces error
 % Produces error due to mismathc of arity of =.
 %
 ex(list_eb) :- 
-     catch( a <- [x=1,y=0,=(z,3,4)], Caught, true ),
-     ( \+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail ),
+     catch_controlled( a <- [x=1,y=0,=(z,3,4)] ),
      <- a,
      A <- a,
      write( a(A) ), nl.
@@ -193,6 +198,43 @@ ex(mix_list) :-
      <- print(a),
      write( a(A) ), nl.
 
+% ex(list2).
+%
+%  Illustrates ways of accessing list elements.
+% 
+ex(list2) :-
+     l <- list(.), 
+     l^[[+"what"]] <- c(1,2,3),
+     l$who <- c(4,5,6),
+     <- l,
+     L <- l,
+     write( l(L) ), nl.
+
+% ex(slot).
+%
+%  Creating formal objects and accessing their content.
+%
+ex(slot) :-
+     <- setClass(+"track", representation(x=+"numeric", y=+"numeric")),
+     myTrack <- new(+"track", x = -4:4, y = exp(-4:4)),
+      <- print( myTrack@x ),
+     % [1] -4 -3 -2 -1  0  1  2  3  4
+      Y <- myTrack@y, 
+      write( y(Y) ), nl,
+      <- setClass(+"nest", representation(z=+"numeric", t=+"track")),
+      myNest <- new(+"nest", z=c(1,2,3) ),
+      myNest@t <- myTrack,
+      myNest@t@x <- Y+1,  % good ex. for hidden vars.
+      <- myNest,
+      % N <- myNest, % unsupported r-type
+      % X <- myNest@t@x,
+      <- print(myNest@t@x),
+      X <- myNest@t@x,
+      <- myNest@t@x,
+      write( x(X) ), nl.
+
+      % myTrack@x <- c(1,2,3).
+
 % ex(add_element).
 %
 %   Adds a third element to a list after creation.
@@ -202,7 +244,7 @@ ex(add_element) :-
      x$c <- [3,4], 
      <- x,    % print   =   $a 3
      X <- x,
-     write( 'X'(X) ), nl.   % X = [a=3.0].
+     write( x(X) ), nl.   % X = [a=3.0].
 
 % ex(singletons).
 %
@@ -218,7 +260,7 @@ ex(singletons) :-
      t <- [3],
      <- t,
      T <- t,
-     write( 'S'(S)-'T'(T) ), nl.
+     write( s(S)-t(T) ), nl.
 
 % ex(assign). 
 %
@@ -230,7 +272,7 @@ ex(assign) :-
      b <- [2],
      <- b,
      C <- a + b,
-     write( 'C'(C) ), nl.
+     write( c(C) ), nl.
 
 
 % ex(assign_1).
@@ -241,7 +283,7 @@ ex(assign_1) :-
      a <- [[1,2,3],[4,5,6]], 
      <- a,
      B <- a*3, 
-     write( 'B'(B) ), nl.
+     write( b(B) ), nl.
 
 % ex(assign_2).
 %
@@ -253,7 +295,7 @@ ex(assign_2) :-
      b <- 3,
      <- b,
      C <- a*b,
-     write( 'C'(C) ), nl.
+     write( c(C) ), nl.
 
 % ex(assign_r).
 %
@@ -286,11 +328,7 @@ ex(dot_in_rvar) :-
      a..b <- [1,2,3],
      <- a..b,
      <- 'a.b',
-     ( <- print('a..b') -> 
-          true
-          ;
-          fail
-     ).
+     catch_controlled( <- print('a..b') ).
 
 % semi_column.
 %
@@ -308,7 +346,7 @@ ex(semi_column) :-
 %  r.eel also supports c() R function concatenation.
 %
 ex(c_vectors) :-
-     a <- c(1,2,3),  % this goes via the fast route
+     a <- c(1,2,3,5),  % this goes via the fast route
      <- a,
      b <- c(1,1,2,2) + c(1:4),
      <- b,
@@ -348,6 +386,27 @@ ex(utf) :-
 	findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
 	nl,
 	<- dev..off(.).
+
+% ex( utf1 ).
+%
+%  Thanks to  Guillem R.
+%
+ex(utf_1) :-
+     s <- ['Pour ce garçon être sur une île, y avoir des histoires de cœur ambiguës et vider un fût de bière sur un canoë entouré par des caïmans, ne fut pas un mince affaire.'],
+     <- s,
+     S <- s,
+     write( s(S) ), nl.
+
+% ex( utf1 ).
+%
+%  Mostly Vitor's then Sander and last one from Nicos.
+%
+ex(utf_2) :-
+     x <- [hello, olá, 'जैसा कहर बरपा तो बर्बाद हो जाएगी मुंबई','Beëindigen',άμπελος],
+     <- x,
+     X <- x,
+     write( x(X) ), nl.
+
 
 % plot_cpu.
 %
@@ -433,8 +492,7 @@ tut(tut3) :-
 
 % factors and tapply.
 tut(tut4) :-
-      /*
-	 state <- c("tas", "sa",  "qld", "nsw", "nsw", "nt",  "wa",  "wa",
+      /* state <- c("tas", "sa",  "qld", "nsw", "nsw", "nt",  "wa",  "wa",
                   "qld", "vic", "nsw", "vic", "qld", "qld", "sa",  "tas",
                   "sa",  "nt",  "wa",  "vic", "qld", "nsw", "nsw", "wa",
                   "sa",  "act", "nsw", "vic", "vic", "act"), */
@@ -504,7 +562,12 @@ cpu_points( [H|T], [S|Ss], [L|Ls] ) :-
      % L = 0,
      cpu_points( T, Ss, Ls ) .
 
-% auxiliary,
+% auxiliaries,
+
+catch_controlled( Expr ) :-
+     catch( Expr, Caught, true ),
+     ( \+ var(Caught) -> write( caught_controlled(Caught) ), nl; fail ).
+
 between_1_and(N,X) :-
      ( var(N) -> N is 100; true ),
      IntN is integer(N),
@@ -539,6 +602,6 @@ plot_cpu( Factor ) :-
      push <- Push,
      pull <- Pull,
      write( plotting(Pull,Push) ), nl,
-     <- plot( points, pull, ylab ='pull & push (red) - in seconds' ),
+     <- plot( points, pull, ylab =+"pull & push (red) - in seconds" ),
      r_char( red, Red ),
      <- points( points, push, col=Red ).

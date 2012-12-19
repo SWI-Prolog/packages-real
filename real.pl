@@ -1,4 +1,3 @@
-%% -*- Mode: Prolog; -*-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    Author:        Nicos Angelopoulos, Vitor Santos Costa, Jan Wielemaker
 %    E-mail:        Nicos Angelopoulos <nicos@gmx.co.uk>
@@ -21,14 +20,14 @@
 	op(950,fx,<-),
 	op(950,yfx,<-),
      (<-)/1,
-     real/2,
+     real_version/2,
+     real_citation/2,
      r_char/2,
      devoff/0,
      r_wait/0,
-	% real_type/1,
 	(<-)/2,
 	op(600,xfy,~),
-	op(600,xfy,'..'),
+	op(600,yfx,'..'),
 	op(400,yfx,'%x%'),
 	op(400,yfx,'%%'),
 	op(400,yfx,'%/%'),
@@ -36,6 +35,7 @@
 	op(400,yfx,'%o%'),
 	op(400,yfx,'%in%'),
 	op(400,yfx,$),
+	op(400,yfx,@),
 	op(800,fx,@),
      op(400,xfy,=+ )
      ]).
@@ -45,10 +45,11 @@
 :- use_module(library(apply_macros)).
 :- use_module(library(charsio)).
 :- use_module(library(readutil)).
+:- use_module(library(debug)).
 
 :- ( current_prolog_flag(windows,true) ->
       nl, nl,
-      write( '!!!   r.eal notice: There is a known issue on Windows where <- print(x) does not print x to the terminal.' ),
+      write( '!!!   r..eal notice: There is a known issue on Windows where <- print(x) does not print x to the terminal.' ),
       nl, nl
       ;
       true
@@ -287,7 +288,6 @@ Many thanks to the original YapR developers for inspiration and some functions.
 @version	0:0:7, 2012/10/09
 @license	Perl Artistic License
 @see		examples/for_real.pl
-@see		examples/real/
 @see		http://www.r-project.org/
 
 */
@@ -358,11 +358,6 @@ start_r :-
 	use_foreign_library(foreign(real)),
 	init_r.
 
-%% real( Version,  Date ).
-%          Version and release date.
-%
-real( 0:0:7, 2012/10/09 ).
-
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
 %
@@ -396,51 +391,52 @@ real( 0:0:7, 2012/10/09 ).
 %   Nickname for <-(R).
 %
 r( RvarIn ) :-
-	is_rvar( RvarIn, _Rvar ),
-	rexpr_codes( RvarIn, [], RvCodes ),
+     (  rvar_identifier(RvarIn,_,RvarCs) 
+        ; (atom(RvarIn),atom_codes(RvarIn,RvarCs))
+     ),
 	!,
-	append(["print( ",RvCodes," )"], CmdCodes),
-	send_r_command( CmdCodes ).
+	append(["print( ",RvarCs," )"], CmdCodes),
+	send_r_codes( CmdCodes ).
 r( R ) :-
-	catch( rexpr_codes(R,TmpRs,Rcodes,[]), _, fail ),
+	rexpr_codes(R,TmpRs,Rcodes,[]),
 	!,
-	send_r_command(Rcodes),
+	send_r_codes(Rcodes),
 	maplist( r_remove, TmpRs ).
 r( _Other ) :-
-	write( user_error, 'Cannot use input to <-/1. \n ' ), nl,
+	write( user_error, 'Cannot use input to <-/1.' ), nl, nl,
 	fail.
 
 %%	r( ?L, +R ).
 %    Nickname for <-(L,R).
 %
+%    Plvar <- Rvar.
+%
 r( Plvar, RvarIn ) :-
      var(Plvar),
-     is_rvar(RvarIn,RvarIn),
+     rvar_identifier( RvarIn, RvarIn, _ ),
      !,
      robj_to_pl_term( RvarIn, Plvar ).
-
-r( RvarIn, PlrExpr ) :-
-     rvar_identifier( RvarIn, RvarIn, _RAsgn ),
-     !,
-     assignment( PlrExpr, RvarIn ).
+%   Plvar <- Rexpr.
 r( Plvar, Rexpr ) :-
      var(Plvar),
      rexpr_codes( Rexpr, TmpRs, Rcodes ),
      !,
+     debug_send_codes( ["rexpr_to_pl_term(",Rcodes,",_Var)"] ),
      rexpr_to_pl_term( Rcodes, Plvar ),
      maplist( r_remove, TmpRs ).
+%  Rvar <- Plval.
+r( RvarIn, PlrExpr ) :-
+     assignment( PlrExpr, RvarIn ),
+     !.
+%  Rexpr1 <- Rexpr2
 r( LRexpr, RRexpr ) :-
-     catch( rexpr_codes('<-'(LRexpr,RRexpr),TmpRs,Rcodes),_,fail),
+     rexpr_codes('<-'(LRexpr,RRexpr),TmpRs,Rcodes),
      !,
-     send_r_command( Rcodes ),
+     send_r_codes( Rcodes ),
      maplist( r_remove, TmpRs ).
 r( _Plvar, _Rexpr ) :-
      write( user_error, 'Cannot decipher modality of <-/2. \n ' ), nl,
      fail.
-
-% maybe add this to the interface ?
-r_remove( Plvar ) :-
-     <- remove( Plvar ).
 
 %%	is_rvar(+Rvar).
 %         True if Rvar is an atom and a known variable in the R environment.
@@ -455,28 +451,20 @@ is_rvar( RvarIn, Rvar ) :-
 	is_r_variable(RvarIn),
 	RvarIn = Rvar.
 is_rvar( RvarIn, Rvar ) :-
-     % atom( Rvar ),
      rvar_identifier( RvarIn, Rvar, _RvarAtom ),
      is_r_variable( Rvar ),
-%     r_char( Rvar, Rchar ),
-%     rexpr_codes( exists(Rchar), [], Rcodes ),
-     %here: rexpr_to_pl_term( Rcodes, true ).
-%     rexpr_to_pl_term( Rcodes, Rbool ),
-%     Rbool == true,
      rexpr_codes( mode(Rvar), [], Rmode ),
      rexpr_to_pl_term( Rmode, Plmode ),
-     % atom_codes( Ratom, Rmode ),
-     RvarModes  = [character,complex,list,logical,'NULL',numeric,raw],
+     RvarModes  = [character,complex,list,logical,'NULL',numeric,raw,'S4'],
      memberchk( Plmode, RvarModes ).
 
 %%	r_char( +Atomic, +RcharAtom ).
 %   Wrap an atomic value with double quotes so it can pass as an R char type.
 %
-%% r_char( Atomic, Rchar ) :-
-%%      atomic( Atomic ),
-%%      !,
-%%      atomic_list_concat( ['"',Atomic,'"'], Rchar ).
-r_char( Rchar, Rchar ).
+r_char( Atomic, Rchar ) :-
+    atomic( Atomic ),
+    !,
+    atomic_list_concat( ['"',Atomic,'"'], Rchar ).
 
 %%	devoff.
 %  Close the current plot devise without any reporting. Short for <- invisible('dev.off'()').
@@ -490,20 +478,61 @@ r_wait :-
      write('Press Return to continue...'), nl,
      read_line_to_codes(user_input, _).
 
+%% real_version( Version,  Date ).
+%          Version and release date.
+%
+real_version( 0:0:9, date(2012,12,19) ).   % the oliebollen version
+
+%% real_citation( -Atom, -Bibterm ).
+% Succeeds once for each publication related to this library. Atom is the atom representation
+% suitable for printing while Bibterm is a bibtex(Type,Key,Pairs) term of the same publication.
+% Produces all related publications on backtracking.
+real_citation( Atom, bibtex(Type,Key,Pairs) ) :-
+    Atom = 'Integrative functional statistics in logic programming \n Nicos Angelopoulos, Vítor Santos Costa, Joao Azevedo, Jan Wielemaker, Rui Camacho and Lodewyk Wessels \n Proc. of Practical Aspects of Declarative Languages (PADL 2013). Accepted (January, 2013. Rome, Italy).',
+    Type = inproceedings,
+    Key  = 'AngelopoulosN+2012',
+    Pairs = [
+               author = 'Nicos Angelopoulos and Vitor Santos Costa and Joao Azevedo and Jan Wielemaker and Rui Camacho and Lodewyk Wessels',
+               title  = 'Integrative functional statistics in logic programming',
+               booktitle = 'Proc. of Practical Aspects of Declarative Languages}',
+               year = 2013,
+               month = 'January',
+               address = 'Rome, Italy',
+               url     = 'http://bioinformatics.nki.nl/~nicos/pbs/padl2013-real.pdf'
+     ].
+
 %%% end of interface predicates
+
+% maybe add this to the interface ?
+r_remove( Plvar ) :-
+     <- remove( Plvar ).
+
+debug_send_codes( RcodesNest ) :-
+     debugging( real ),
+     !,
+     flatten( RcodesNest, Rcodes ),
+     atom_codes( Ratom, Rcodes ),
+     format( user_error, 'Sending to R: ~w\n', [Ratom] ).
+debug_send_codes( _ ).
+
+send_r_codes( Rcodes ) :-
+     debug_send_codes( Rcodes ),
+     send_r_command( Rcodes ).
 
 rexpr_codes( Rterm, RTmps, Rcodes ) :-
      rexpr_codes( Rterm, RTmps, Rcodes, [] ).
 
 assignment(PlDataIn, Rvar) :-
-     atom( Rvar ),
-          % we would like to use rvar_identifier here, see below
-     functor( PlDataIn, c, _ ),
+     % atom( Rvar ),
+     rvar_identifier( Rvar, Rvar, _ ),
+     functor( PlDataIn, c, _Arity ),
      send_c_vector(PlDataIn, Rvar), !.
+
 assignment(PlDataIn, Rvar) :-
-     atom( Rvar ),
+     % atom( Rvar ),
           % we would like to use rvar_identifier here, instead of atom/1
           % but a$b <- 3 does not work with set_r_variable/2.
+     rvar_identifier( Rvar, Rvar, _ ),
      pl_data( PlDataIn, PlData ),
      !,
      % term_to_atom( RvarIn, RvarAtom ),
@@ -513,7 +542,7 @@ assignment( Rexpr, Rvar ) :-
      rvar_identifier( Rvar, _Rvar, RAssgn ),
      rexpr_codes( '<-'(-RAssgn,Rexpr), TmpRs, Rcodes ),
      !,
-     send_r_command( Rcodes ),
+     send_r_codes( Rcodes ),
      maplist( r_remove, TmpRs ).
 
 pl_data( PlData, PlData ) :-
@@ -523,22 +552,59 @@ pl_data( PlDataIn, PlData ) :-
      PlDataIn =.. [c|PlData].
 */
 
-rvar_identifier( Rvar, Rvar, Rvar ) :-
-	atom( Rvar ).
-rvar_identifier( A..B, Atom, Atom ) :-
-	atom(A), 
-	rvar_identifier( B, Batom, _ ),
-	atomic_list_concat( [A,'.',Batom], Atom ).
-rvar_identifier( A$B, A, C ) :-
-	atom(A), 
-	rvar_identifier( B, Bid, _ ),
-	term_to_atom( A$Bid, C ).
-rvar_identifier( A^B, A, C ) :-
+/** rvar_identifier( Rterm, Rvar, Rcodes ).
+
+True if Rterm is an access term for an R variable Rvar and Rcodes
+are the codes corresponding to Rterm. Note that it is not the
+case that term_to_codes( Rterm, Rcodes ) holds. Rterm might contain code lists
+that are contextually interpreted by R as slots or list item labels.
+Or, Rterm might contain indices that we translate.
+
+*/
+
+rvar_identifier( Rt, Rv, Rc ) :-
+     rvar_identifier_1( Rt, Rv, Ra ),
+     !,
+     % is_r_variable( Rv ),
+     atom_codes( Ra, Rc ).
+
+rvar_identifier_1( Rvar, Rvar, Rvar ) :-
+	atom( Rvar ),
+     ( catch(term_to_atom(Atom,Rvar),_,fail) ),
+     Atom == Rvar.
+rvar_identifier_1( A..B, Atom, Atom ) :-
+	atom(B), 
+	rvar_identifier_1( A, Aatom, _ ),
+	atomic_list_concat( [Aatom,'.',B], Atom ).
+rvar_identifier_1( A$B, Rv, C ) :-
+     rname_atom( B, Batom ),
+	rvar_identifier_1( A, Rv, Aatom ),
+	% term_to_atom( Aatom$Batom, C ).
+     atomic_list_concat( [Aatom,'$',Batom], C ).
+rvar_identifier_1( A@B, Rv, C ) :-
+     rname_atom( B, Batom ),
+	rvar_identifier_1( A, Rv, Aatom ),
+     atomic_list_concat( [Aatom,'@',Batom], C ).
+	% term_to_atom( Aatom@Batom, C ).
+rvar_identifier_1( A^[[B]], Rv, C ) :-
+     rvar_identifier_1( A, Rv, Aatom ),
+     rexpr_codes(B, [], BCs, [] ),
+     atom_codes( Batom, BCs ),
+     atomic_list_concat( [Aatom,'[[',Batom,']]'], C ).
+     % atomic_list_concat( [Aatom,'[["',Batom,'"]]'], C ).
+
+rvar_identifier_1( A^B, A, C ) :-
 	atom( A ),
 	is_list( B ),
-	term_to_atom( B, Batom ),
+     indices_to_string( B, BCs, [] ),
+	% term_to_atom( B, Batom ),
+     atom_codes( Batom, BCs ),
 	atom_concat( A, Batom, C ).
 
+/** rexpr_codes(V,_,_).
+
+     Generate (or parse) an R expression as codes from/to a Prolog term.
+*/
 rexpr_codes(V,[]) -->
 	{ var(V) }, !,
 	{ throw(error(instantiation_error,r_interface)) }.
@@ -570,30 +636,48 @@ rexpr_codes(A,List) -->
 	rexpr_codes(B,List).
         */
 /* atom is already protected */
+/*
 rexpr_codes(A,[]) -->
 	{ atom(A), is_rvar(A, _) }, !,
         add_atom(-A).
+        */
 rexpr_codes(A,[]) -->
 	/* string */
 	{ atom(A) }, !,
-	add_atom(A).
+	add_atom(-A).
 rexpr_codes(A,[]) -->
 	{ number(A) }, !,
 	add_number(A).
+rexpr_codes(A^[[Key]], TmpRs) -->
+     !,
+	% rexpr_unquoted(A, [] ),
+	rexpr_codes(A, Atmp ),
+     "[[", rexpr_codes(Key, Ktmp), "]]",
+     { append(Atmp,Ktmp,TmpRs) }.
 rexpr_codes(A^List, TmpRs) -->
 	{ is_list(List) }, !,
-	rexpr_unquoted(A, TmpRs),
+	rexpr_codes(A, TmpRs),
+	% rexpr_unquoted(A, TmpRs),
 	indices_to_string( List ).
 rexpr_codes(A$B,TmpA) -->
 	!,
-	rexpr_unquoted( A, TmpA ),
+	rexpr_codes( A, TmpA ),
+	% rexpr_unquoted( A, TmpA ),
 	"$",
-	add_atom( -B ).
+	add_name( B ).
+rexpr_codes(A@B,TmpA) -->
+	!,
+	rexpr_codes( A, TmpA ),
+	% rexpr_unquoted( A, TmpA ),
+	"@",
+	add_name( B ).
 rexpr_codes(A1..A2,TmpRs) --> !,
-	rexpr_unquoted(A1, TmpRs1),
+	% rexpr_unquoted(A1, TmpRs1),
+	rexpr_codes(A1, TmpRs1),
 	".",
-	rexpr_unquoted(A2, TmpRs2),
-        { append(TmpRs1, TmpRs2, TmpRs) }.
+	% rexpr_unquoted(A2, TmpRs2),
+	rexpr_codes(A2, TmpRs2),
+     { append(TmpRs1, TmpRs2, TmpRs) }.
 % R function definition
 rexpr_codes((A1 :- A2), TmpRs) -->
 	!,
@@ -617,26 +701,30 @@ rexpr_codes(S,TmpRs) -->
 	{ S =.. [F|Args], F \== '.' },
 	add_atom( -F ),
 	"(",
-	rexprs_codes(Args, 1, F, TmpRs),
+	rexprs_codes(Args, true, F, TmpRs),
 	")".
 
 rexprs_codes([], _, _, []) --> [].
-rexprs_codes([Arg|Args], N, Func, TmpRs) -->
-	( { N == 1 } -> "" ; " ," ),
+rexprs_codes([Arg|Args], Fin, Func, TmpRs) -->
+	( { Fin == true } -> "" ; " ," ),
 	rexpr_codes(Arg, TmpA),
-	{ N1 is N+1 },
-	rexprs_codes(Args, N1, Func, TmpAs),
+	% { N1 is N+1 },
+	rexprs_codes(Args, false, Func, TmpAs),
 	{append(TmpA, TmpAs, TmpRs)}.
 
+/* trying to remove this...
 rexpr_unquoted(A, TmpRs) -->
 	( { atom(A) } -> 
 	    add_atom(-A), { TmpRs = [] }
 	; 
 	  rexpr_codes(A , TmpRs)
         ).
+        */
 
+/* obsolete ?
 literal(1, library).
 literal(1, require).
+*/
 
 indices_to_string( List ) -->
 	"[",
@@ -665,6 +753,7 @@ index_comma( _ ) -->
      !,
      ",".
 
+/* obsolete ?
 %% codes_string(Codes,Quoted).
 % check a list is full of (utf ?) codes
 % while replacing any " with \" to produce Quoted from Ascii
@@ -689,6 +778,31 @@ char_my_utf8( C ) :-
 %
 sew_code( 34, [0'\\,0'"|T], T ) :- !.
 sew_code( C, [C|T], T ).
+*/
+
+%% add_name( Name ).
+%
+% first cut in supporting places where R is expecting "names or string constants"
+% as in the RHS of $ and @
+%
+add_name( Name ) --> 
+     { ( atomic(Name)  -> Fo = '~a'; Fo = '~s' ),
+	  format(codes(Out), Fo, [Name])
+     },
+	Out.
+     
+%% rname_atom( Rname, Atom ).
+%
+%  Holds for atomic Atom a map of Rname.
+%  If Rname is a list is assumed to be a list of codes that is 
+%  atom_code(/2)d to Atom.
+%
+rname_atom( Rname, Atom ) :-
+     ( atomic(Rname) ->
+          Atom = Rname
+          ;
+          atom_codes( Rname, Atom )
+     ).
 
 %
 % a nil atom in Prolog is likely to be the empty string in R.
@@ -703,7 +817,7 @@ add_atom([C|Codes] ) -->
 	!,
 	{ format(codes(Out), '"~s"', [C|Codes]) },
 	Out.
-% hande atoms explicitly quoted (r_char)
+% handle atoms that are explicitly quoted (r_char)
 add_atom(A) -->
 	{ atom_codes(A, Codes) },
 	check_quoted(A, Codes).
@@ -718,6 +832,7 @@ check_quoted(A, _) -->
 	Codes.
 
 
+/* no longer used ? 
 add_string_as_atom( [] ) --> [] .
 add_string_as_atom( [H|Tail] ) -->
 	( { H =:= "\"" } -> 
@@ -726,6 +841,7 @@ add_string_as_atom( [H|Tail] ) -->
         [H]
         ),
 	add_string_as_atom( Tail ).
+     */
 
 
 add_number(El) -->
@@ -765,5 +881,22 @@ binary_op_associativity( xfx ).
 
 boolean_atom( true ).
 boolean_atom( false ).
+
+% error handling
+:- multifile prolog:message//1.
+
+/*
+prolog:message(What) -->
+     { write( here(What) ), nl, fail}.
+     */
+
+prolog:message(unhandled_exception(real_error(Message))) -->
+	message(Message).
+
+prolog:message(real_error(Message)) -->
+	message(Message).
+
+message( correspondence ) -->
+     ['R was unable to digest your statement, either syntax or existance error.' - [] ].
 
 :- initialization(start_r, now).
