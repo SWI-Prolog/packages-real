@@ -250,7 +250,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	0:1:0, 2012/12/25, oliebollen 
+@version	0:1:0, 2012/12/26, oliebollen 
 @license	Perl Artistic License
 @see		http://bioinformatics.nki.nl/~nicos/sware/real
 @see		doc/html/real.html
@@ -921,5 +921,5 @@ message( r_executable ) -->
      ['R..eal was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
 
 
-:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(devoff_all) ).
+:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt((devoff_all,end_r)) ).
 :- initialization(start_r, now).
