@@ -377,17 +377,28 @@ ex(binary_op) :-
      write( P ), nl.
      % not !!! : P = [0.0, 0.0].
 
-% utf.
+% ex(utf).
 %
 % Plots 3 points with the x-axis label showing some Greek letters (alpha/Omega).
 %
 ex(utf) :-
-	<- plot( c(1,2,3), c(3,2,1), xlab= +[945,0'/,937] ), %'
+	<- plot( c(1,2,3), c(3,2,1), xlab= +[945,0'/,937] ),
 	findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
 	nl,
 	<- dev..off(.).
 
-% ex( utf1 ).
+
+% ex(utf_atom).
+%
+% Plots 3 points with the x-axis label showing some Greek letters (alpha/Omega) as atom preceded by +.
+%
+ex(utf_atom) :-
+	<- plot( c(1,2,3), c(3,2,1), xlab= +'α/Ω' ),
+	findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
+	nl,
+	<- dev..off(.).
+
+% ex( utf_1 ).
 %
 %  Thanks to  Guillem R.
 %
@@ -416,6 +427,24 @@ ex(utf_2) :-
 %
 ex(plot_cpu) :-
      plot_cpu( 1000 ).
+
+ex(debug) :-
+     real_debug,
+     write( started_debugging ), nl,
+     x <- c(1,2,3),  % c-vectors
+     y <- [1,2,3],   % PL data lists
+     X <- x,         % R var to PL var
+     x <- [a=[1,2,4],b=[4,5,6]],
+     A <- x,
+     B <- x$b,       % R expression to PL var
+     Y <- x$b + x$a,
+     x$c <- [6,3,7],
+     real_nodebug,
+     write( x(X) ), nl,
+     write( a(A) ), nl,
+     write( b(B) ), nl,
+     write( y(Y) ), nl,
+     write( stopped_debugging ), nl.
 
 % Some tests from r_session, 
 %

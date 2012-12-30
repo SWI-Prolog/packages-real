@@ -798,6 +798,8 @@ init_R(void)
 { int argc = 2;
   char * argv[] = {"R", "--slave","--vanilla"};
 
+  Rf_endEmbeddedR(0);
+
 #if R_SIGNAL_HANDLERS
   R_SignalHandlers=0;
 #endif

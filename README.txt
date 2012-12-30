@@ -1,9 +1,11 @@
 
-r..eal,  0:0:7, October 2012
+r..eal,  0:1:0, December 2012
 ---
 
 r..eal is a c-based interface for connecting R to Prolog. 
-See the documentation at doc/r..eal.html for more information.
+See the documentation at doc/html/real.html for more information.
+There is also a paper doc/padl2013-real.pdf and a user's guide
+doc/guide.pdf .
 
 This version works on current versions of SWI and YAP.
 To get the latest git version of r..eal goto 
@@ -14,25 +16,36 @@ To get the latest git version of r..eal goto
 INSTALL
 ---
 
-Ungzip and untar the distribuition files into {swi,yap}/packages 
-creating directory {swi,yap}/packages/real
+See doc/guide.pdf for instructions about stable versions.
+
+To install developmental versions do:
+
+SWI-Prolog
+
+ Install last stable r..eal with 
+ ?- pack_install( real ).
  
-cd into this directory
+ do 
+ ?- pack_rebuild( real ).  % to force SWI to build from sources.
 
-autoconf
-autoheader
+ And then replace c/real.c, prolog/real.pl and examples/for_real.pl 
+ in the stable installation by the development version.
 
-./configure
+ and do again:
 
-make 
-make install
+ ?- pack_rebuild( real ).
 
+Yap: 
+replace $YAP/packages/real with the development version you downloaded
+and rebuilt Yap with 
+
+configure --with-R
 
 
 Test
 ---
- load 
- [real_ex].
+ ?- [examples/for_real].
+ ?- for_real.
 
 In your prolog system.
 
@@ -41,4 +54,4 @@ In your prolog system.
 
 Nicos Angelopoulos and Vitor Santos Costa
 
-October, 2012.
+December, 2012.

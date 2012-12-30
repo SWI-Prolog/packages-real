@@ -11,23 +11,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- module('real', [
-     init_r/0,
+     start_r/0,
      end_r/0,
 	r/2,
 	r/1,
      is_rvar/1,
      is_rvar/2,
-	op(950,fx,<-),
-	op(950,yfx,<-),
-     (<-)/1,
      real_citation/2,
      real_debug/0,
      real_nodebug/0,
      real_version/3,
      r_char/2,
-     devoff/0,
      r_wait/0,
+     devoff/0,
+     devoff_all/0,
+     (<-)/1,
 	(<-)/2,
+	op(950,fx,<-),
+	op(950,yfx,<-),
 	op(600,xfy,~),
 	op(600,yfx,'..'),
 	op(400,yfx,'%x%'),
@@ -49,27 +50,35 @@
 :- use_module(library(readutil)).
 :- use_module(library(debug)).
 
-:- ( current_prolog_flag(windows,true) ->
+:- ( (   current_prolog_flag(windows,true),
+         current_prolog_flag(version_data,swi(_,_,_,_)) ) ->
       nl, nl,
-      write( '!!!   r..eal notice: There is a known issue on Windows where <- print(x) does not print x to the terminal.' ),
+      write( '!!!   r..eal notice: There is a known issue on Windows (SWI) where <- print(x) does not print x to the terminal.' ),
       nl, nl
       ;
       true
    ).
 
+:- dynamic( real:r_started/1 ).
+
 /** <module> r..eal
 
-A C-based  Prolog interface to R.
+An interface to the R statistical software.
 
 ---++ Introduction
 
 This library enables the communication with an R process started as a shared library. 
 It is the result of the efforts of two research groups that have worked in parallel.
-The syntactic emphasis on a minimalistic interface.  A single predicate (<-/2,<-/1) channels
+The syntactic emphasis on a minimalistic interface. 
+
+In the doc/ directory of the distribution there is User's guide, a published paper
+and html documentation from PlDoc (doc/html/real.html).
+
+A single predicate (<-/2,<-/1) channels
 the bulk of the interactions. In addition to using R as a shared library, r..eal uses
 the c-interfaces of SWI/Yap and R to pass objects in both directions.
 The usual mode of operation is to load Prolog values on to R variables and then call
-an R function on these values. The return value of the called function can be either placed
+R functions on these values. The return value of the called function can be either placed
 on R variable or passed back to Prolog.  It has been tested extensively on current
 SWI and YAP on Linux machines but it should also compile and work on MS operating systems and Macs.
 
@@ -79,21 +88,17 @@ The main modes for utilising the interface are
 	<- +Rvar
 ==
 
-     Print  Rvar or evaluate expression, Rexpr,  in R
+     Print  Rvar or evaluate expression Rexpr in R
 ==
-	+PLvar  <- +Rexpr
+	+Rvar   <- +PLdata
+	+Rexpr  <- +PLdata
+	-PLvar  <- +Rvar
+	-PLvar  <- +Rexpr
 	+Rexpr1 <- +Rexpr2
-	+Rvar   <- +PLval
-	+PLvar  <- +Rvar
 ==
 
-
-Evaluate Rexpr and pass result to PLvar.
-
-Pass Rexpr1 <- Rexpr2 to R.
-
-Pass PLval to Rvar (using the c-interface when Rvar is numeric, list or list of 2 levels).
-See data transfer below.  Assign contents of Rvar to PLvar using the c-interface.
+Pass Prolog data to R, pass R data to Prolog or assign an R expression to 
+an assignable R expression.
 
 ---++ Syntax
 
@@ -109,31 +114,30 @@ Prolog constructs are converted by the library as follows:
      * =|(.)|= at the end of atoms that are known R functions -> =|()|=  (ex. =|dev..off(.) -> dev.off()|= )
      * =|[]|= -> c() (which equal to R's NULL value)
      * ( f(x) :-  (..))   -> f(x) (...)
-     * Lists of lists of numbers are converted to matrices. All first level lists must have the same length.
+     * Lists of lists are converted to matrices. All first level lists must have the same length.
      * Filenames must be given as Prolog strings.
      * R specific operators (eg. %*% should be quoted in Prolog.
-     * If you want to ensure that you quote a string, use +String.
+     * + prepends strings, both for (Prolog) codes and atoms: +"String" and +'String'
      * If you want to ensure that you do not quote a string, use -String.
      * expressions that pose difficulty in translation can always be passed as unquoted Prolog atoms or strings.
 
 
 ---++ Data transfers
 
-Following R convension we will talk about the type-of and the class-of data.
-i, defined by i <- as.integer(c(1,2,3)), is of class integer vector and type integer.
 R vectors are mapped to prolog lists and matrices are mapped to nested lists.
 The convention works the other way around too.
 
 There are two ways to pass prolog data to R. The more efficient one is by using
 ==
- Rvar <- PLval
+ Rvar <- PLdata
 ==
 
-We will call this the low-level interface. It is implemented as C code and transfers via C data
+Where are Pldata is one of the basic data types (number,boolean) or a list.
+This is implemented as C code and transfers via C data
 between R and Prolog. In what follows atomic PLval data are simply considered as singleton lists.
-Flat Plval lists are translated to R vectors and lists of one level of nesting to R matrices
+Flat Pldata lists are translated to R vectors and lists of one level of nesting to R matrices
 (which are 2 dimensional arrays in R parlance). The type of values of the vector or matrice is
-taken to be the type of the first data element of the Plval according to the following :
+taken to be the type of the first data element of the Pldata according to the following :
 
      * integer -> integer
      * float   -> double
@@ -147,11 +151,11 @@ assume the type of the object is that of the first scalar until it encounters so
 R..eal will currently will re-start and repopulate partial integers for floats as follows: 
 
 ==
-r <- [1,2,3].
-R <- r.
+r <- [1,2,3].         % pass 1,2,3 to an R vector r
+R <- r.               % pass contents of R vector r to Prolog variable R
 R = [1, 2, 3].
 
-i <- [1,2,3.1].
+i <- [1,2,3.1].       % r is now a vector of floats, rather than integers
 I <- i.
 I = [1.0, 2.0, 3.1].
 
@@ -165,7 +169,7 @@ However, not all possible "corrections" are currently supported. For instance,
 ERROR: real:set_r_variable/2: Type error: `boolean' expected, found `a'
 ==
 
-In the low level interface we map prolog atoms to R strings-
+In the data passing mode we map Prolog atoms to R strings-
 
 ==
 ?- x <- [abc,def].
@@ -187,12 +191,16 @@ This is only advisable for short data structures. For instance,
 
 ==
      tut_4a :-
-          state <- c("tas", "sa",  "qld", "nsw", "nsw"),
+          state <- c(+"tas", +"sa",  +"qld", +"nsw", +"nsw"),
+          <- state.
+
+     tut_4b :-
+          state <- c(+tas, +sa,  +qld, +nsw, +nsw),
           <- state.
 ==
 
-Through this interface it is more convenient to represent R chars by Prolog list of codes,
-as in the above example.
+Through this interface it is more convenient to be explicit about R chars by Prolog prepending
+atoms or codes with + as in the above example.
 
 ---++ Examples
 
@@ -209,40 +217,14 @@ yes
 ?- Z <- e.
 Z = ['$NaN','$NaN',17.0,'$NaN','$NaN','$NaN','$NaN','$NaN','$NaN',12.0]
 
-int :-
-     i <- [1,2,3,4], I <- i, write( i(I) ), nl.
-
-bool_back :-
-     t <- [1,2,3,4,5,1], s <- t==1, S <- s, write( s(S) ), nl.
-
-list :-
-     a <- [x=1,y=0,z=3], A <- a, write( 'A'(A) ), nl.
-
-matrix :-
-     a <- [[1,2,3],[4,5,6]], A <- a.
-
-expr1 :-
-     a <- [[1,2,3],[4,5,6]], B <- a*3.
-
-expr2 :-
-     a <- [[1,2,3],[4,5,6]], b <- 3, C <- a*b.
-
 rtest :-
-	y <- rnorm(50),
-	<- y,
-	x <- rnorm(y),
-     <- x11(width=5,height=3.5),
-	<- plot(x,y),
-     r_wait,
-	<- dev..off(.),
-	Y <- y,
-	write( y(Y) ), nl,
-	findall( Zx, between(1,9,Zx), Z ),
-	z <- Z,
-	<- z,
-	cars <- [1, 3, 6, 4, 9],
-     r_wait,
-	devoff.
+	y <- rnorm(50),               % get 50 random samples from normal distribution
+	<- y,                         % print the values via R
+	x <- rnorm(y),                % get an equal number of normal samples
+     <- x11(width=5,height=3.5),   % create a plotting window
+	<- plot(x,y)                  % plot the two samples
+     r_wait,                       % wait for user to hit Enter
+	<- dev..off(.).               % close the plotting window
 
 tut6 :-
 	d <- outer(0:9, 0:9),
@@ -264,31 +246,16 @@ logical :-
 
 ==
 
-Note, r..eal is sensitive to the amount of stack made available to the Prolog engine.
-With a generous stack, huge objects can be passed between the two systems.
-
-==
-
-κρότος;~/sureal% yap -f -g "ensure_loaded(library(real))"
-YAP 6.3.0 (x86_64-linux): Fri Nov 11 16:06:00 CET 2011
-MYDDAS version MYDDAS-0.9.1
-?- 
-   findall( I, between(1,1000000,I), Is), i <- Is, K <- i, 
-   length( K, Len ), write( len(Len) ), nl, fail.
-
-len(1000000)
-
-==
-
 ---++ Info
-
-Many thanks to the original YapR developers for inspiration and some functions.
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@author	Jan Wielemaker
-@version	0:0:7, 2012/10/09
+@version	0:1:0, 2012/12/25, oliebollen 
 @license	Perl Artistic License
+@see		http://bioinformatics.nki.nl/~nicos/sware/real
+@see		doc/html/real.html
+@see		doc/guide.pdf
+@see		doc/padl2013-real.pdf
 @see		examples/for_real.pl
 @see		http://www.r-project.org/
 
@@ -325,6 +292,8 @@ init_r_env :-
 	% typical MacOs setup
 	exists_directory('/Library/Frameworks'), !,
 	install_in_osx.
+init_r_env :-
+     throw( real_error(r_executable) ).
 
 install_in_win32_path(RPath) :-
 	current_prolog_flag(address_bits, 64), !,
@@ -351,14 +320,24 @@ install_in_osx :-
 
 % interface predicates
 
-%%	init_r.
+%%	start_r.
 %	Start an R object. This is done automatically upon loading the library. 
-%    We should add some checking that none exists here
-%    before starting a new one. This is currently not the case.
+%    Only 1 instance should be started per Prolog session.
+%    Multiple sessions will be ignored silently.
+%
 start_r :-
+     \+ r_started( true ),
+     !,
 	init_r_env,
 	use_foreign_library(foreign(real)),
-	init_r.
+	init_r,
+     retractall( r_started(_) ),
+     assert( r_started(true) ).
+start_r.
+
+%%	end_r.
+% 
+%    End the connection to the R process.
 
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
@@ -370,26 +349,40 @@ start_r :-
 '<-'(X) :-
      r(X).
 
-%%	'<-'(+PLvar,+Rexpr).
-%%	'<-'(+Rexpr1,+Rexpr2).
-%%	'<-'(+Rvar,+PLval).
-%%	'<-'(+PLvar,+Rvar).
+%%  '<-'(+Rvar, +PLdata ).
+%%  '<-'(+Rexpr, +PLdata ).
+%%  '<-'(-PLvar, +Rvar ).
+%%  '<-'(-PLvar, +Rexpr ).
+%%  '<-'(+Rexpr1, +Rexpr2 ).
+%
+%  Pass Prolog data PLdata to Rvar. PLdata is a term that is one of:  
+%  an atomic value, flat list or list of depth 2. This mode uses the C-interface to pass
+% the value to an R variable. 
+%
+%  Pass PLdata to an assignable R expression.
+%
+%  Pass Rvar to PLvar variable via the C-interface.
 %
 %  Evaluate Rexpr and store its return value to PLvar.
-%
+% 
 %  Pass Rexpr1 <- Rexpr2 to R.
 %
-%  Pass Prolog value PLval to Rvar. If PLval is a single value, flat list or list of depth 2
-%  use the low-level interface to pass the value to an R variable (see section on data transfer).
-%
-%  Place value of Rvar to PLvar.
-%
 %  Note that all Rexpr* are first processed as described in the section about syntax before passed to R.
+% R..eal also looks into Rexpressions and passes embeded lists to hidden R variables in order
+% to pass large data efficiently. 
+%
+%  c/n terms are recognised as PLdata
+% if and only if they contain basic data items in all their arguments that can be
+% cast to a single data type. This builds on the c() function of R that is a basic 
+% data constructor. Currently c/n terms are not recognised within nested expressions.
+% But a mechanism similar to the hidden variables for Prolog lists in expressions should 
+% be easy to implement.
 %
 '<-'(X,Y) :-
      r(X,Y ).
 
 %% r( R )
+%
 %   Nickname for <-(R).
 %
 r( RvarIn ) :-
@@ -409,21 +402,21 @@ r( _Other ) :-
 	fail.
 
 %%	r( ?L, +R ).
-%    Nickname for <-(L,R).
 %
-%    Plvar <- Rvar.
+%    Nickname for <-(L,R).
 %
 r( Plvar, RvarIn ) :-
      var(Plvar),
      rvar_identifier( RvarIn, RvarIn, _ ),
      !,
+     debug( real, 'Assigning to Prolog variable R variable ~a',  [RvarIn] ),
      robj_to_pl_term( RvarIn, Plvar ).
 %   Plvar <- Rexpr.
 r( Plvar, Rexpr ) :-
      var(Plvar),
      rexpr_codes( Rexpr, TmpRs, Rcodes ),
      !,
-     debug_send_codes( ["rexpr_to_pl_term(",Rcodes,",_Var)"] ),
+     debug( real, 'Assigning to Prolog variable R expression ~s',  [Rcodes] ),
      rexpr_to_pl_term( Rcodes, Plvar ),
      maplist( r_remove, TmpRs ).
 %  Rvar <- Plval.
@@ -461,7 +454,9 @@ is_rvar( RvarIn, Rvar ) :-
      memberchk( Plmode, RvarModes ).
 
 %%	r_char( +Atomic, +RcharAtom ).
+%
 %   Wrap an atomic value with double quotes so it can pass as an R char type.
+%   This is more or less obsolete. You can use +Atomic directly in R expressions.
 %
 r_char( Atomic, Rchar ) :-
     atomic( Atomic ),
@@ -472,6 +467,18 @@ r_char( Atomic, Rchar ) :-
 %  Close the current plot devise without any reporting. Short for <- invisible('dev.off'()').
 devoff :-
 	<- invisible(-'dev.off()').
+
+%% devoff_all.
+%
+% Close all open devices.
+% 
+devoff_all :-
+     Dev <- dev..cur(.),
+     Dev > 1,
+     !,
+     devoff,
+     devoff_all.
+devoff_all.
 
 %% r_wait
 %         Currently only waiting for Return to be pressed.
@@ -487,7 +494,7 @@ r_wait :-
 real_debug :-
      debug(real).
 
-%% real_debug.
+%% real_nodebug.
 %
 %  A common (SWI/Yap) interface for stopping debugging messages for r..eal.
 %
@@ -495,9 +502,11 @@ real_nodebug :-
      nodebug(real).
 
 %% real_version( Version,  Date, Note ).
-%          Version and release date.
+%  
+%  Version and release Date (data(Y,M,D) term). Note is either a 
+%  note or nickname for the release. In git development sources this is seet to `in_development´.
 %
-real_version( 0:0:9, date(2012,12,19), oliebollen ).   % the oliebollen version
+real_version( 0:1:0, date(2012,12,26), oliebollen ).   % the oliebollen version
 
 %% real_citation( -Atom, -Bibterm ).
 % Succeeds once for each publication related to this library. Atom is the atom representation
@@ -523,16 +532,8 @@ real_citation( Atom, bibtex(Type,Key,Pairs) ) :-
 r_remove( Plvar ) :-
      <- remove( Plvar ).
 
-debug_send_codes( RcodesNest ) :-
-     debugging( real ),
-     !,
-     flatten( RcodesNest, Rcodes ),
-     atom_codes( Ratom, Rcodes ),
-     format( user_error, 'Sending to R: ~w\n', [Ratom] ).
-debug_send_codes( _ ).
-
 send_r_codes( Rcodes ) :-
-     debug_send_codes( Rcodes ),
+     debug( real, 'Sending to R: ~s', [Rcodes] ),
      send_r_command( Rcodes ).
 
 rexpr_codes( Rterm, RTmps, Rcodes ) :-
@@ -542,7 +543,8 @@ assignment(PlDataIn, Rvar) :-
      % atom( Rvar ),
      rvar_identifier( Rvar, Rvar, _ ),
      functor( PlDataIn, c, _Arity ),
-     send_c_vector(PlDataIn, Rvar), !.
+     send_c_vector(PlDataIn, Rvar), !,
+     debug( real, 'Assigned c vector to R variable ~a.', [Rvar] ).
 
 assignment(PlDataIn, Rvar) :-
      % atom( Rvar ),
@@ -552,7 +554,8 @@ assignment(PlDataIn, Rvar) :-
      pl_data( PlDataIn, PlData ),
      !,
      % term_to_atom( RvarIn, RvarAtom ),
-     set_r_variable(Rvar, PlData).
+     set_r_variable(Rvar, PlData),
+     debug( real, 'Assigned Prolog data to R variable ~a.', [Rvar] ).
 
 assignment( Rexpr, Rvar ) :-
      rvar_identifier( Rvar, _Rvar, RAssgn ),
@@ -914,5 +917,9 @@ prolog:message(real_error(Message)) -->
 
 message( correspondence ) -->
      ['R was unable to digest your statement, either syntax or existance error.' - [] ].
+message( r_executable ) -->
+     ['R..eal was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
 
+
+:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(devoff_all) ).
 :- initialization(start_r, now).
