@@ -278,7 +278,13 @@ init_r_env :-
 	setenv('R_HOME',RPath), % this probably does not help (at least not XPs)
 	% now we need to have the DLL in our path
      % nicos: although on xp it seems that path has to already be set.
-	install_in_win32_path(RPath).
+     ( current_prolog_flag(address_bits, 64) ->
+          Psf = '\\bin\\x64'
+          ;
+          Psf = '\\bin\\i386'
+     ),
+     atomic_list_concat( RPath, Psf, ToR ),
+	install_in_ms_windows(ToR).
 init_r_env :-
 	% typical Linux 64 bit setup (fedora)
 	current_prolog_flag(address_bits, 64),
@@ -295,14 +301,14 @@ init_r_env :-
 init_r_env :-
      throw( real_error(r_executable) ).
 
-install_in_win32_path(RPath) :-
-	current_prolog_flag(address_bits, 64), !,
+% nicos: This should become the standard way.  2013/01/02.
+install_in_ms_windows( ToR ) :-
+     current_predicate(win_add_dll_directory/1),
+     !,
+     win_add_dll_directory( ToR ).
+install_in_ms_windows(RPath) :-
 	getenv('PATH',OPath),
-	atomic_list_concat([OPath,';',RPath,'\\bin\\x64'],Path),
-	setenv('PATH',Path).
-install_in_win32_path(RPath) :-
-	getenv('PATH',OPath),
-	atomic_list_concat([OPath,';',RPath,'\\bin\\i386'],Path),
+	atomic_list_concat([OPath,';',RPath],Path),
      % if you have problems with R associated dlls, you might also want to add:
 	% atomic_list_concat([IPath,';',RPath,'\\modules\\i386'],Path),
 	setenv('PATH',Path).
