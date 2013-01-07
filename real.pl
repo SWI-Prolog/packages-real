@@ -50,16 +50,18 @@
 :- use_module(library(readutil)).
 :- use_module(library(debug)).
 
-:- ( (   current_prolog_flag(windows,true),
-         current_prolog_flag(version_data,swi(_,_,_,_)) ) ->
+:- dynamic( real:r_started/1 ).
+
+:- ( ( current_prolog_flag(hwnd,_), % true iff ran via swipl-win.exe
+	  \+ r_started( true )	      % only display once
+     )  -> 
       nl, nl,
-      write( '!!!   r..eal notice: There is a known issue on Windows (SWI) where <- print(x) does not print x to the terminal.' ),
+      write( '!!!   r..eal notice: There is a known issue with swipl-exe) where <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
       nl, nl
       ;
       true
    ).
 
-:- dynamic( real:r_started/1 ).
 
 /** <module> r..eal
 
@@ -512,7 +514,7 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a 
 %  note or nickname for the release. In git development sources this is seet to `in_development´.
 %
-real_version( 0:1:0, date(2012,12,26), oliebollen ).   % the oliebollen version
+real_version( 0:1:1, date(2012,12,26), testing_new_build_process ).
 
 %% real_citation( -Atom, -Bibterm ).
 % Succeeds once for each publication related to this library. Atom is the atom representation
