@@ -252,7 +252,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	0:1:0, 2012/12/26, oliebollen 
+@version	0:1:1, 2012/01/10,  development
 @license	Perl Artistic License
 @see		http://bioinformatics.nki.nl/~nicos/sware/real
 @see		doc/html/real.html
@@ -285,7 +285,7 @@ init_r_env :-
           ;
           Psf = '\\bin\\i386'
      ),
-     atomic_list_concat( RPath, Psf, ToR ),
+     atomic_list_concat( [RPath,Psf], ToR ),
 	install_in_ms_windows(ToR).
 init_r_env :-
 	% typical Linux 64 bit setup (fedora)
@@ -307,12 +307,18 @@ init_r_env :-
 install_in_ms_windows( ToR ) :-
      current_predicate(win_add_dll_directory/1),
      !,
-     win_add_dll_directory( ToR ).
+     debug( real, 'Setting up ms-wins dll directory: ~a', [ToR] ),
+     win_add_dll_directory( ToR ),
+	install_in_ms_windows_path( ToR ).
 install_in_ms_windows(RPath) :-
+     install_in_ms_windows_path( RPath ).
+
+install_in_ms_windows_path(RPath) :-
 	getenv('PATH',OPath),
 	atomic_list_concat([OPath,';',RPath],Path),
      % if you have problems with R associated dlls, you might also want to add:
 	% atomic_list_concat([IPath,';',RPath,'\\modules\\i386'],Path),
+     debug( real, 'Changing wins path to: ~a', [Path] ),
 	setenv('PATH',Path).
 
 install_in_osx :-
@@ -512,9 +518,10 @@ real_nodebug :-
 %% real_version( Version,  Date, Note ).
 %  
 %  Version and release Date (data(Y,M,D) term). Note is either a 
-%  note or nickname for the release. In git development sources this is seet to `in_development´.
+%  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:1, date(2012,12,26), testing_new_build_process ).
+real_version( 0:1:1, date(2012,12,26), development ).
+     % 0:1:0,   the oliebollen version
 
 %% real_citation( -Atom, -Bibterm ).
 % Succeeds once for each publication related to this library. Atom is the atom representation
