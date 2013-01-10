@@ -56,7 +56,7 @@
 	  \+ r_started( true )	      % only display once
      )  -> 
       nl, nl,
-      write( '!!!   r..eal notice: There is a known issue with swipl-exe) where <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
+      write( '!!!   r..eal notice: There is a known issue with swipl-win.exe) where <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
       nl, nl
       ;
       true

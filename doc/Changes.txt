@@ -1,12 +1,12 @@
-0:1:0       2013 Unpublished.
-	swipl-win.exe doesnot listen to the std I/O streams. So <-print/1 doesnot display
-	on console. Added message that only succeeds when Prolog was started with
+0:1:1       2013 January [Unpublished]
+	swipl-win.exe doesnot use the std I/O streams. So <-print/1 doesnot display
+	on console. Added message that only displays when Prolog was started with
 	swipl-win.exe and only once.
 
 0:1:0       2012 December 26   [oliebollen]
    First release with updated syntax, documentation and Windows binaries.
 	Reflects state of affairs for the PADL 2013 related publication.
-   Great work by Vitor on passing c() via C and on 
+   Great work by Vitor on passing c() via C and on utf support.
 
 0:0:5       2012 September 12
    ?fixed?  * in array indicators (tut5) broken (why ?).
