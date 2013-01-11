@@ -73,8 +73,9 @@ This library enables the communication with an R process started as a shared lib
 It is the result of the efforts of two research groups that have worked in parallel.
 The syntactic emphasis on a minimalistic interface. 
 
-In the doc/ directory of the distribution there is User's guide, a published paper
-and html documentation from PlDoc (doc/html/real.html).
+In the doc/ directory of the distribution there is user's guide, a published paper
+and html documentation from PlDoc (doc/html/real.html). There is large number
+of examples in `examples/for_real.pl`.
 
 A single predicate (<-/2,<-/1) channels
 the bulk of the interactions. In addition to using R as a shared library, r..eal uses
@@ -120,8 +121,8 @@ Prolog constructs are converted by the library as follows:
      * Filenames must be given as Prolog strings.
      * R specific operators (eg. %*% should be quoted in Prolog.
      * + prepends strings, both for (Prolog) codes and atoms: +"String" and +'String'
-     * If you want to ensure that you do not quote a string, use -String.
-     * expressions that pose difficulty in translation can always be passed as unquoted Prolog atoms or strings.
+     * If you want to ensure that you do not quote a string, use -"String".
+     * Expressions that pose difficulty in translation can always be passed as unquoted Prolog atoms or strings.
 
 
 ---++ Data transfers
