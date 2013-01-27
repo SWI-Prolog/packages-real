@@ -253,7 +253,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	0:1:1, 2012/01/10,  development
+@version	0:1:1, 2012/01/27,  swi_binaries
 @license	Perl Artistic License
 @see		http://bioinformatics.nki.nl/~nicos/sware/real
 @see		doc/html/real.html
@@ -521,8 +521,8 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a 
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:1, date(2012,12,26), development ).
-     % 0:1:0,   the oliebollen version
+real_version( 0:1:1, date(2013,1,27), swi_binaries ).
+     % 0:1:0, 2012/12/26, oliebollen
 
 %% real_citation( -Atom, -Bibterm ).
 % Succeeds once for each publication related to this library. Atom is the atom representation
@@ -903,7 +903,7 @@ fresh_r_variable(Plv) :-
 % we are converting this to an operators version and we might
 % need to introduce a top-level version that checks for functions
 binary( Rname ) :-
-     current_op( _, Assoc, Rname ),
+     current_op( _, Assoc, real:Rname ),
      once( binary_op_associativity( Assoc ) ).
      % atomic_list_concat( [exists,'("',Rname,'",mode="function")'],  Atom ),
      % atom_codes( Atom, Rcodes ),

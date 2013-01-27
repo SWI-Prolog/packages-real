@@ -1,7 +1,9 @@
-0:1:1       2013 January [Unpublished]
+0:1:1       2013 January 17   (cross_compiled)
 	swipl-win.exe doesnot use the std I/O streams. So <-print/1 doesnot display
 	on console. Added message that only displays when Prolog was started with
-	swipl-win.exe and only once.
+	swipl-win.exe and only once. The windows dlls are now cross compiled. 
+	There are now also shared (.so) libs for linux i386 and x86_64.
+	Added Makefile.swi to the sources.
 
 0:1:0       2012 December 26   [oliebollen]
    First release with updated syntax, documentation and Windows binaries.
