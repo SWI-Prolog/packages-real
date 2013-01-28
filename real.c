@@ -808,7 +808,7 @@ init_R(void)
 }
 
 static foreign_t
-end_R(void)
+stop_R(void)
 { Rf_endEmbeddedR(0);
   R_dot_Last();
   R_RunExitFinalizers();
@@ -1063,7 +1063,7 @@ install_real(void)
   ATOM_false = PL_new_atom("false");
 
   PL_register_foreign("init_r",		  0, init_R,	       0);
-  PL_register_foreign("end_r",		  0, end_R,	       0);
+  PL_register_foreign("stop_r",		  0, stop_R,	       0);
   PL_register_foreign("send_r_command",	  1, send_r_command,   0);
   PL_register_foreign("send_c_vector",	  2, send_c_vector,    0);
   PL_register_foreign("rexpr_to_pl_term", 2, rexpr_to_pl_term, 0);

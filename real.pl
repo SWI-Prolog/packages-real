@@ -56,7 +56,7 @@
 	  \+ r_started( true )	      % only display once
      )  -> 
       nl, nl,
-      write( '!!!   r..eal notice: There is a known issue with swipl-win.exe) where <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
+      write( '!!!   r..eal notice: There is a known issue with swipl-win.exe. \n R\'s I/O streams cannot be connected to those of Prolog.\n So for instance, <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
       nl, nl
       ;
       true
@@ -310,7 +310,34 @@ init_r_env :-
 	exists_directory('/Library/Frameworks'), !,
 	install_in_osx.
 init_r_env :-
-     throw( real_error(r_executable) ).
+	absolute_file_name( path('R'), This,
+			 [ extensions(['',exe]),
+			   access(execute)
+			 ] ),
+	dirpath_to_r_home( This, Rhome ),
+	exists_directory( Rhome ), !,
+     debug( real, 'Setting R_HOME to bin relative: ~a', [Rhome] ),
+	setenv('R_HOME',Rhome).
+	
+init_r_env :-
+     throw( real_error(r_root) ).
+
+dirpath_to_r_home( This, Rhome ) :-
+	% here()
+	atomic_list_concat( Consts, '/', This ),
+	reverse( Consts, RevConsts ),
+	% nth0( Nth, RevConsts, bin ),
+	!,
+	to_nth( RevConsts, bin, Right ),
+	r_home_postfix( Post ),
+	reverse( [Post|Right], RevRight ),
+	atomic_list_concat( RevRight, '/', Rhome ).
+
+r_home_postfix( 'lib/R' ).
+
+to_nth( [To|T], To, T ) :- !.
+to_nth( [_H|T], To, Right ) :-
+	to_nth( T, To, Right ).
 
 % nicos: This should become the standard way.  2013/01/02.
 install_in_ms_windows( ToR ) :-
@@ -371,6 +398,10 @@ start_r.
 %%	end_r.
 % 
 %    End the connection to the R process.
+end_r :-
+	% so that module systems doesn't complain when 
+	% initialisation fails to find R.
+	stop_r.
 
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
@@ -935,6 +966,14 @@ binary_op_associativity( xfx ).
 boolean_atom( true ).
 boolean_atom( false ).
 
+% Only on SWI, bug Vitor for at_halt/1.
+halt_r :- 
+	r_started(_),
+	devoff_all,
+	end_r,
+	!.
+halt_r.
+
 % error handling
 :- multifile prolog:message//1.
 
@@ -951,9 +990,9 @@ prolog:message(real_error(Message)) -->
 
 message( correspondence ) -->
      ['R was unable to digest your statement, either syntax or existance error.' - [] ].
-message( r_executable ) -->
+message( r_root ) -->
      ['R..eal was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
 
 
-:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt((devoff_all,end_r)) ).
+:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(halt_r); true ). 
 :- initialization(start_r, now).
