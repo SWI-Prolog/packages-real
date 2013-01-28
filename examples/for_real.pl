@@ -135,7 +135,7 @@ ex(matrix_int) :-
 
 % ex(matrix_char). 
 %
-%  Pass a 2-level list of lists of charactesrs to an R matrix (and back again).
+%  Pass a 2-level list of lists of characters to an R matrix (and back again).
 %
 ex(matrix_char) :-
      a <- [[a,b,c],[d,e,f]],

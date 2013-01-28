@@ -267,10 +267,13 @@ logical :-
 %%%
 
 init_r_env :-
-	% done
-	getenv('R_HOME',_), !.
-% windows is windows
+	getenv('R_HOME',Path),
+	% done, except if in windows...
+	\+ current_prolog_flag(windows, true),
+	!,
+     debug( real, 'Found R_HOME: ~a', [Path] ).
 init_r_env :-
+	% windows is windows
 	current_prolog_flag(windows, true),
 	( HKEY='HKEY_LOCAL_MACHINE/Software/R-core/R'; 
 		HKEY='HKEY_CURRENT_USER/Software/R-core/R' ),
@@ -291,12 +294,17 @@ init_r_env :-
 init_r_env :-
 	% typical Linux 64 bit setup (fedora)
 	current_prolog_flag(address_bits, 64),
-	exists_directory('/usr/lib64/R'), !,
-	setenv('R_HOME','/usr/lib64/R').
+	Linux64 = '/usr/lib64/R',
+	exists_directory(Linux64), !,
+     debug( real, 'Setting R_HOME to: ~a', [Linux64] ),
+	setenv('R_HOME',Linux64).
 init_r_env :-
 	% typical Linux  setup (Ubuntu)
-	exists_directory('/usr/lib/R'), !,
-	setenv('R_HOME','/usr/lib/R').
+	Linux32 = '/usr/lib/R',
+	exists_directory( Linux32 ), !,
+     debug( real, 'Setting R_HOME to: ~a', [Linux32] ),
+	setenv('R_HOME',Linux32).
+% nicos, fixme: Linux multilib ? 
 init_r_env :-
 	% typical MacOs setup
 	exists_directory('/Library/Frameworks'), !,
@@ -323,15 +331,25 @@ install_in_ms_windows_path(RPath) :-
 	setenv('PATH',Path).
 
 install_in_osx :-
-	% typical MacOs setup
-	exists_directory('/Library/Frameworks/R.framework/Resources'), !,
-	setenv('R_HOME','/Library/Frameworks/R.framework/Resources').
-install_in_osx :-
 	current_prolog_flag(address_bits, 64),
-	exists_directory('/Library/Frameworks/lib64/R'), !,
-	setenv('R_HOME','/Library/Frameworks/lib64/R').
+	Mac64 = '/Library/Frameworks/lib64/R',
+	exists_directory(Mac64), !,
+     debug( real, 'Setting R_HOME to: ~a', [Mac64] ),
+	setenv('R_HOME',Mac64).
 install_in_osx :-
-	setenv('R_HOME','/Library/Frameworks/lib/R').
+	% typical MacOs setup
+	MacTypical = '/Library/Frameworks/R.framework/Resources',
+	exists_directory(MacTypical), !,
+     debug( real, 'Setting R_HOME to: ~a', [MacTypical] ),
+	setenv('R_HOME', MacTypical).
+install_in_osx :-
+	LastMac = '/Library/Frameworks/lib/R',
+	( exists_directory(LastMac) -> 
+     	debug( real, 'Setting R_HOME to: ~a', [MacTypical] )
+		;
+     	debug( real, 'Setting R_HOME to non-existing: ~a', [MacTypical] )
+	),
+	setenv('R_HOME', LastMac ).
 
 % interface predicates
 
