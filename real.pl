@@ -54,7 +54,7 @@
 
 :- ( ( current_prolog_flag(hwnd,_), % true iff ran via swipl-win.exe
 	  \+ r_started( true )	      % only display once
-     )  -> 
+     )  ->
       nl, nl,
       write( '!!!   r..eal notice: There is a known issue with swipl-win.exe. \n R\'s I/O streams cannot be connected to those of Prolog.\n So for instance, <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
       nl, nl
@@ -69,9 +69,9 @@ An interface to the R statistical software.
 
 ---++ Introduction
 
-This library enables the communication with an R process started as a shared library. 
+This library enables the communication with an R process started as a shared library.
 It is the result of the efforts of two research groups that have worked in parallel.
-The syntactic emphasis on a minimalistic interface. 
+The syntactic emphasis on a minimalistic interface.
 
 In the doc/ directory of the distribution there is user's guide, a published paper
 and html documentation from PlDoc (doc/html/real.html). There is large number
@@ -100,12 +100,12 @@ The main modes for utilising the interface are
 	+Rexpr1 <- +Rexpr2
 ==
 
-Pass Prolog data to R, pass R data to Prolog or assign an R expression to 
+Pass Prolog data to R, pass R data to Prolog or assign an R expression to
 an assignable R expression.
 
 ---++ Syntax
 
-There are syntactic conventions in R that make unparsable prolog code. 
+There are syntactic conventions in R that make unparsable prolog code.
 Notably function and variable names are allowed to contain dots, square brackets are used
 to access parts of vectors and arrays and functions are allowed empty argument tuples.
 We have introduced relevant syntax which allows for easy transition between prolog and R.
@@ -151,7 +151,7 @@ Booleans are represented in prolog as true/false atoms.
 Currently arrays of aribtrary dimensions are not supported in the low-level interface.
 Note that in R a scalar is just a one element vector.  When passing non-scalars the interface will
 assume the type of the object is that of the first scalar until it encounters something different.
-R..eal will currently will re-start and repopulate partial integers for floats as follows: 
+R..eal will currently will re-start and repopulate partial integers for floats as follows:
 
 ==
 r <- [1,2,3].         % pass 1,2,3 to an R vector r
@@ -165,7 +165,7 @@ I = [1.0, 2.0, 3.1].
 
 ==
 
-However, not all possible "corrections" are currently supported. For instance, 
+However, not all possible "corrections" are currently supported. For instance,
 
 ==
 ?- c <- [a,b,c,1].
@@ -189,7 +189,7 @@ X = [abc, def].
 
 In addition Prolog data can be passed through the expression mechanism.
 That is, data appearing in an arbitrary R expression will be parsed and be part of the long
-string that will be passed from Prolog to R for evaluation.  
+string that will be passed from Prolog to R for evaluation.
 This is only advisable for short data structures. For instance,
 
 ==
@@ -272,15 +272,15 @@ init_r_env :-
 	\+ current_prolog_flag(windows, true),
 	!,
      debug( real, 'Found R_HOME: ~a', [Path] ).
+:- if(current_predicate(win_registry_get_value/3)).
 init_r_env :-
 	% windows is windows
-	current_prolog_flag(windows, true),
-	( HKEY='HKEY_LOCAL_MACHINE/Software/R-core/R'; 
+	( HKEY='HKEY_LOCAL_MACHINE/Software/R-core/R';
 		HKEY='HKEY_CURRENT_USER/Software/R-core/R' ),
-	catch(win_registry_get_value(HKEY,'Current Version', Version),_,fail),
+	win_registry_get_value(HKEY,'Current Version', Version),
 	!,
 	atomic_list_concat([HKEY,Version],'/',SecondKey),
-	catch(win_registry_get_value(SecondKey,'InstallPath', RPath),_,fail), !,
+	win_registry_get_value(SecondKey,'InstallPath', RPath), !,
 	setenv('R_HOME',RPath), % this probably does not help (at least not XPs)
 	% now we need to have the DLL in our path
      % nicos: although on xp it seems that path has to already be set.
@@ -291,6 +291,7 @@ init_r_env :-
      ),
      atomic_list_concat( [RPath,Psf], ToR ),
 	install_in_ms_windows(ToR).
+:- endif.
 init_r_env :-
 	% typical Linux 64 bit setup (fedora)
 	current_prolog_flag(address_bits, 64),
@@ -304,7 +305,7 @@ init_r_env :-
 	exists_directory( Linux32 ), !,
      debug( real, 'Setting R_HOME to: ~a', [Linux32] ),
 	setenv('R_HOME',Linux32).
-% nicos, fixme: Linux multilib ? 
+% nicos, fixme: Linux multilib ?
 init_r_env :-
 	% typical MacOs setup
 	exists_directory('/Library/Frameworks'), !,
@@ -318,7 +319,7 @@ init_r_env :-
 	exists_directory( Rhome ), !,
      debug( real, 'Setting R_HOME to bin relative: ~a', [Rhome] ),
 	setenv('R_HOME',Rhome).
-	
+
 init_r_env :-
      throw( real_error(r_root) ).
 
@@ -340,14 +341,15 @@ to_nth( [_H|T], To, Right ) :-
 	to_nth( T, To, Right ).
 
 % nicos: This should become the standard way.  2013/01/02.
+:- if(current_predicate(win_add_dll_directory/1)).
 install_in_ms_windows( ToR ) :-
-     current_predicate(win_add_dll_directory/1),
-     !,
      debug( real, 'Setting up ms-wins dll directory: ~a', [ToR] ),
      win_add_dll_directory( ToR ),
 	install_in_ms_windows_path( ToR ).
+:- else.
 install_in_ms_windows(RPath) :-
      install_in_ms_windows_path( RPath ).
+:- endif.
 
 install_in_ms_windows_path(RPath) :-
 	getenv('PATH',OPath),
@@ -371,17 +373,17 @@ install_in_osx :-
 	setenv('R_HOME', MacTypical).
 install_in_osx :-
 	LastMac = '/Library/Frameworks/lib/R',
-	( exists_directory(LastMac) -> 
-     	debug( real, 'Setting R_HOME to: ~a', [MacTypical] )
+	( exists_directory(LastMac) ->
+	debug( real, 'Setting R_HOME to: ~a', [MacTypical] )
 		;
-     	debug( real, 'Setting R_HOME to non-existing: ~a', [MacTypical] )
+	debug( real, 'Setting R_HOME to non-existing: ~a', [MacTypical] )
 	),
 	setenv('R_HOME', LastMac ).
 
 % interface predicates
 
 %%	start_r.
-%	Start an R object. This is done automatically upon loading the library. 
+%	Start an R object. This is done automatically upon loading the library.
 %    Only 1 instance should be started per Prolog session.
 %    Multiple sessions will be ignored silently.
 %
@@ -396,10 +398,10 @@ start_r :-
 start_r.
 
 %%	end_r.
-% 
+%
 %    End the connection to the R process.
 end_r :-
-	% so that module systems doesn't complain when 
+	% so that module systems doesn't complain when
 	% initialisation fails to find R.
 	stop_r.
 
@@ -419,27 +421,27 @@ end_r :-
 %%  '<-'(-PLvar, +Rexpr ).
 %%  '<-'(+Rexpr1, +Rexpr2 ).
 %
-%  Pass Prolog data PLdata to Rvar. PLdata is a term that is one of:  
+%  Pass Prolog data PLdata to Rvar. PLdata is a term that is one of:
 %  an atomic value, flat list or list of depth 2. This mode uses the C-interface to pass
-% the value to an R variable. 
+% the value to an R variable.
 %
 %  Pass PLdata to an assignable R expression.
 %
 %  Pass Rvar to PLvar variable via the C-interface.
 %
 %  Evaluate Rexpr and store its return value to PLvar.
-% 
+%
 %  Pass Rexpr1 <- Rexpr2 to R.
 %
 %  Note that all Rexpr* are first processed as described in the section about syntax before passed to R.
 % R..eal also looks into Rexpressions and passes embeded lists to hidden R variables in order
-% to pass large data efficiently. 
+% to pass large data efficiently.
 %
 %  c/n terms are recognised as PLdata
 % if and only if they contain basic data items in all their arguments that can be
-% cast to a single data type. This builds on the c() function of R that is a basic 
+% cast to a single data type. This builds on the c() function of R that is a basic
 % data constructor. Currently c/n terms are not recognised within nested expressions.
-% But a mechanism similar to the hidden variables for Prolog lists in expressions should 
+% But a mechanism similar to the hidden variables for Prolog lists in expressions should
 % be easy to implement.
 %
 '<-'(X,Y) :-
@@ -450,7 +452,7 @@ end_r :-
 %   Nickname for <-(R).
 %
 r( RvarIn ) :-
-     (  rvar_identifier(RvarIn,_,RvarCs) 
+     (  rvar_identifier(RvarIn,_,RvarCs)
         ; (atom(RvarIn),atom_codes(RvarIn,RvarCs))
      ),
 	!,
@@ -535,7 +537,7 @@ devoff :-
 %% devoff_all.
 %
 % Close all open devices.
-% 
+%
 devoff_all :-
      Dev <- dev..cur(.),
      Dev > 1,
@@ -566,8 +568,8 @@ real_nodebug :-
      nodebug(real).
 
 %% real_version( Version,  Date, Note ).
-%  
-%  Version and release Date (data(Y,M,D) term). Note is either a 
+%
+%  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
 real_version( 0:1:1, date(2013,1,27), swi_binaries ).
@@ -657,7 +659,7 @@ rvar_identifier_1( Rvar, Rvar, Rvar ) :-
      ( catch(term_to_atom(Atom,Rvar),_,fail) ),
      Atom == Rvar.
 rvar_identifier_1( A..B, Atom, Atom ) :-
-	atom(B), 
+	atom(B),
 	rvar_identifier_1( A, Aatom, _ ),
 	atomic_list_concat( [Aatom,'.',B], Atom ).
 rvar_identifier_1( A$B, Rv, C ) :-
@@ -710,10 +712,10 @@ rexpr_codes(Array,TmpRs) -->
 rexpr_codes(A,[]) -->
 	{ functor(A,Name,1),arg(1,A,'.')}, !,
 	add_atom(-Name), "()".
-/*   This can be used if we want c() to be passed by lists, 
+/*   This can be used if we want c() to be passed by lists,
 but it currently does not accommodate c(1:3,1:3)
 rexpr_codes(A,List) -->
-	{ 
+	{
          A =.. [c|B], B \== []
         },
 	!,
@@ -770,7 +772,7 @@ rexpr_codes((A1 :- A2), TmpRs) -->
 	rexpr_codes(A2,TmpA2),
 	{append(TmpA1,TmpA2,TmpRs)}.
 rexpr_codes(S,TmpRs) -->
-	{ functor(S, Na, 2),  
+	{ functor(S, Na, 2),
 	  binary(Na), atom_codes(Na,NaS),
           arg(1,S,A1), arg(2,S,A2)
         }, !,
@@ -798,9 +800,9 @@ rexprs_codes([Arg|Args], Fin, Func, TmpRs) -->
 
 /* trying to remove this...
 rexpr_unquoted(A, TmpRs) -->
-	( { atom(A) } -> 
+	( { atom(A) } ->
 	    add_atom(-A), { TmpRs = [] }
-	; 
+	;
 	  rexpr_codes(A , TmpRs)
         ).
         */
@@ -816,7 +818,7 @@ indices_to_string( List ) -->
 	"]".
 
 index_to_string( [] ) --> [].
-index_to_string( [H|T] ) --> 
+index_to_string( [H|T] ) -->
      index_element_to_string( H ),
      index_comma( T ),
      index_to_string( T ).
@@ -827,7 +829,7 @@ index_element_to_string( List ) -->
      { is_list(List) },
      !,
      indices_to_string( List ).
-     
+
 index_element_to_string( Num ) -->
      { write_to_chars(Num,Codes) },
      Codes.
@@ -869,16 +871,16 @@ sew_code( C, [C|T], T ).
 % first cut in supporting places where R is expecting "names or string constants"
 % as in the RHS of $ and @
 %
-add_name( Name ) --> 
+add_name( Name ) -->
      { ( atomic(Name)  -> Fo = '~a'; Fo = '~s' ),
 	  format(codes(Out), Fo, [Name])
      },
 	Out.
-     
+
 %% rname_atom( Rname, Atom ).
 %
 %  Holds for atomic Atom a map of Rname.
-%  If Rname is a list is assumed to be a list of codes that is 
+%  If Rname is a list is assumed to be a list of codes that is
 %  atom_code(/2)d to Atom.
 %
 rname_atom( Rname, Atom ) :-
@@ -893,11 +895,11 @@ rname_atom( Rname, Atom ) :-
 %
 add_atom([]) --> !,
 	"\"\"".
-add_atom( -A ) --> 
+add_atom( -A ) -->
 	!,
 	{ format(codes(Out), '~a', [A]) },
 	Out.
-add_atom([C|Codes] ) --> 
+add_atom([C|Codes] ) -->
 	!,
 	{ format(codes(Out), '"~s"', [C|Codes]) },
 	Out.
@@ -905,21 +907,21 @@ add_atom([C|Codes] ) -->
 add_atom(A) -->
 	{ atom_codes(A, Codes) },
 	check_quoted(A, Codes).
-	
-check_quoted(true, _) --> !, "TRUE".	
+
+check_quoted(true, _) --> !, "TRUE".
 check_quoted(false, _) --> !, "FALSE".
 check_quoted(A, _) --> { is_r_variable(A) }, !,
 	{ format(codes(Codes), '~a', [A]) },
-	Codes.	
+	Codes.
 check_quoted(A, _) -->
 	{ format(codes(Codes), '"~a"', [A]) },
 	Codes.
 
 
-/* no longer used ? 
+/* no longer used ?
 add_string_as_atom( [] ) --> [] .
 add_string_as_atom( [H|Tail] ) -->
-	( { H =:= "\"" } -> 
+	( { H =:= "\"" } ->
             ( { Tail == [] } -> "\"" ; "\\\"" )
         ;
         [H]
@@ -933,7 +935,7 @@ add_number(El) -->
 	Codes.
 
 array_to_c(Array,Rv) -->
-     { 
+     {
           fresh_r_variable(Rv),
           set_r_variable(Rv,Array),
           atom_codes(Rv,RvCodes)
@@ -967,7 +969,7 @@ boolean_atom( true ).
 boolean_atom( false ).
 
 % Only on SWI, bug Vitor for at_halt/1.
-halt_r :- 
+halt_r :-
 	r_started(_),
 	devoff_all,
 	end_r,
@@ -994,5 +996,5 @@ message( r_root ) -->
      ['R..eal was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
 
 
-:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(halt_r); true ). 
+:- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(halt_r); true ).
 :- initialization(start_r, now).
