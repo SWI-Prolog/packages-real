@@ -831,15 +831,25 @@ index_to_string( [H|T] ) -->
      index_to_string( T ).
 
 index_element_to_string( * ) -->
-     [].
+	[].
 index_element_to_string( List ) -->
-     { is_list(List) },
-     !,
-     indices_to_string( List ).
-
+	{ is_list(List) },
+	!,
+	"c(", index_to_string( List ), ")".
 index_element_to_string( Num ) -->
-     { write_to_chars(Num,Codes) },
-     Codes.
+	{ integer(Num), !, write_to_chars(Num,Codes) },
+	Codes.
+index_element_to_string( +Atom ) -->
+	{ atom(Atom), !, atom_codes(Atom, Codes) },
+	"'", Codes, "'".
+index_element_to_string( +String ) -->
+	{ is_list(String) }, !,
+	"\"", String, "\"".
+index_element_to_string( CExp ) -->
+	{ CExp =.. [c|Cs] }, !,
+	"c(", index_to_string(Cs), ")".
+index_element_to_string( CExp ) -->
+	{ throw(cannot_process_index(CExp)) }.
 
 index_comma( [] ) --> !, [].
 index_comma( _ ) -->
@@ -942,12 +952,12 @@ add_number(El) -->
 	Codes.
 
 array_to_c(Array,Rv) -->
-     {
+	{
           fresh_r_variable(Rv),
           set_r_variable(Rv,Array),
           atom_codes(Rv,RvCodes)
-     },
-     RvCodes.
+        },
+	RvCodes.
 
 fresh_r_variable(Plv) :-
      between( 1, 10000, I ),
