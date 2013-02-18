@@ -14,6 +14,7 @@
 static functor_t FUNCTOR_dot2;
 static functor_t FUNCTOR_equal2;
 static functor_t FUNCTOR_boolop1;
+static functor_t FUNCTOR_plus1;
 static atom_t ATOM_true;
 static atom_t ATOM_false;
 
@@ -71,6 +72,7 @@ REAL_term_type( term_t t )
             if ( !PL_is_functor(t, FUNCTOR_boolop1) )
 	            return PL_TERM;
 	            // return PL_type_error("R-term (in type)", t);
+
 
            term_t arg1 = PL_new_term_ref();
            atom_t a;
@@ -213,8 +215,14 @@ char_vector_sexp(term_t t, size_t len, SEXP *ansP)
   for(index=0; PL_get_list(tail, head, tail); index++)
     { char *s;
 
+    restart:
     if ( PL_get_chars(head, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
       { CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_UTF8);
+    } else if (PL_is_functor(head,FUNCTOR_plus1))
+      { if ( !PL_get_arg(1, head, head) )
+	  return PL_type_error("R-term (in char vect, 2)", head);
+
+      goto restart;
     } else if (PL_is_functor(head,FUNCTOR_boolop1))
     { term_t arg1 = PL_new_term_ref();
       atom_t a;
@@ -520,21 +528,30 @@ pl_sexp(term_t t, SEXP *ansP)
 	  case PL_STRING:
 	    return char_vector_sexp(t, len, ansP);
 	  case PL_TERM:
-	  { if ( PL_is_functor(head, FUNCTOR_equal2) )
-	    { return named_list_sexp(t, len, ansP);
-	    } else if ( PL_is_functor(head, FUNCTOR_dot2) )
-	    { return matrix_sexp(t, head, len, 0, ansP);
-	    } else
-	    { return PL_type_error("R-termo", head);
+	    { if ( PL_is_functor(head, FUNCTOR_equal2) )
+		{
+		  return named_list_sexp(t, len, ansP);
+		} 
+	      else if ( PL_is_functor(head, FUNCTOR_dot2) )
+		{ 
+		  return matrix_sexp(t, head, len, 0, ansP);
+		} 
+	      else if ( PL_is_functor(head, FUNCTOR_plus1) )
+		{
+		  return  char_vector_sexp(t, len, ansP);
+		} 
+	      else
+		{
+		  return PL_type_error("R-termo", head);
+		}
+	      break;
 	    }
-       break;
-	  }
-	  case PL_BOOL:
+	case PL_BOOL:
      // {  int val; if ( PL_get_bool_ex(t, &val) ) { PROTECT(ans = NEW_LOGICAL(1)); nprotect++; LOGICAL_DATA(ans)[0] = val; } }
-            return logical_vector_sexp( t, len, ansP );
-       break;
-	  default:
-	    assert(0);
+	  return logical_vector_sexp( t, len, ansP );
+	  break;
+	default:
+	  assert(0);
    }
       } else if ( !PL_is_functor(t, FUNCTOR_boolop1) )
       { term_t arg1 = PL_new_term_ref();
@@ -545,7 +562,8 @@ pl_sexp(term_t t, SEXP *ansP)
 
           return char_vector_sexp(arg1, 1, ansP);
         } else
-      { return PL_type_error("R-terma", t);
+      { 
+	return PL_type_error("R-terma", t);
       }
 
       break;
@@ -1059,6 +1077,7 @@ install_real(void)
 { FUNCTOR_dot2 = PL_new_functor(PL_new_atom("."), 2);
   FUNCTOR_equal2 = PL_new_functor(PL_new_atom("="), 2);
   FUNCTOR_boolop1 = PL_new_functor(PL_new_atom("@"), 1);
+  FUNCTOR_plus1 = PL_new_functor(PL_new_atom("+"), 1);
   ATOM_true  = PL_new_atom("true");
   ATOM_false = PL_new_atom("false");
 
