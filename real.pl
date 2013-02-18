@@ -323,6 +323,7 @@ init_r_env :-
 init_r_env :-
      throw( real_error(r_root) ).
 
+% track down binarythrough symbolic links...
 dirpath_to_r_home( This0, Rhome ) :-
 	read_link(This0, _, This), !,
 	dirpath_to_r_home( This, Rhome ).
@@ -338,7 +339,8 @@ dirpath_to_r_home( This, Rhome ) :-
 	atomic_list_concat( RevRight, '/', Rhome0 ),
 	atomic_concat( '/', Rhome0, Rhome).
 
-r_home_postfix( 'lib64/R' ).
+r_home_postfix( 'lib64/R' ) :- 
+	current_prolog_flag(address_bits, 64).
 r_home_postfix( 'lib/R' ).
 
 to_nth( [To|T], To, T ) :- !.
