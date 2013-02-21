@@ -842,6 +842,13 @@ index_element_to_string( Num ) -->
 index_element_to_string( +Atom ) -->
 	{ atom(Atom), !, atom_codes(Atom, Codes) },
 	"'", Codes, "'".
+index_element_to_string( -El ) -->
+	"-",
+	index_element_to_string(El).
+index_element_to_string( ElR:ElL ) -->
+	index_element_to_string(ElR),
+	":",
+	index_element_to_string(ElL).
 index_element_to_string( +String ) -->
 	{ is_list(String) }, !,
 	"\"", String, "\"".
