@@ -836,9 +836,6 @@ index_element_to_string( List ) -->
 	{ is_list(List) },
 	!,
 	"c(", index_to_string( List ), ")".
-index_element_to_string( Num ) -->
-	{ integer(Num), !, write_to_chars(Num,Codes) },
-	Codes.
 index_element_to_string( +Atom ) -->
 	{ atom(Atom), !, atom_codes(Atom, Codes) },
 	"'", Codes, "'".
@@ -848,6 +845,9 @@ index_element_to_string( +String ) -->
 index_element_to_string( CExp ) -->
 	{ CExp =.. [c|Cs] }, !,
 	"c(", index_to_string(Cs), ")".
+index_element_to_string( Oth ) -->
+	{ (integer(Oth);atom(Oth);compound(Oth)), !, write_to_chars(Oth,Codes) },
+	Codes.
 index_element_to_string( CExp ) -->
 	{ throw(cannot_process_index(CExp)) }.
 
