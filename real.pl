@@ -579,7 +579,7 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:1, date(2013,1,27), swi_binaries ).
+real_version( 0:1:1, date(2013,2,21), development ).
      % 0:1:0, 2012/12/26, oliebollen
 
 %% real_citation( -Atom, -Bibterm ).

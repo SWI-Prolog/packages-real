@@ -143,6 +143,17 @@ ex(matrix_char) :-
      A <- a,
      write( a(A) ), nl.
 
+
+/*
+% ex(matrix_idx).
+%
+ex(matrix_idx) :-
+     a <- [[1,2,3],[4,5,6]],
+     <- a,
+	J <- aˆ[[1,3],*],
+	write( j(J) ), nl.
+	*/
+
 % ex(list).
 %
 %  A Prolog = pairlist to an R list. Shows 2 alternative ways to access the list items.
