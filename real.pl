@@ -579,7 +579,7 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:1, date(2013,1,27), swi_binaries ).
+real_version( 0:1:1, date(2013,2,21), development ).
      % 0:1:0, 2012/12/26, oliebollen
 
 %% real_citation( -Atom, -Bibterm ).
@@ -836,9 +836,6 @@ index_element_to_string( List ) -->
 	{ is_list(List) },
 	!,
 	"c(", index_to_string( List ), ")".
-index_element_to_string( Num ) -->
-	{ integer(Num), !, write_to_chars(Num,Codes) },
-	Codes.
 index_element_to_string( +Atom ) -->
 	{ atom(Atom), !, atom_codes(Atom, Codes) },
 	"'", Codes, "'".
@@ -855,6 +852,9 @@ index_element_to_string( +String ) -->
 index_element_to_string( CExp ) -->
 	{ CExp =.. [c|Cs] }, !,
 	"c(", index_to_string(Cs), ")".
+index_element_to_string( Oth ) -->
+	{ (integer(Oth);atom(Oth);compound(Oth)), !, write_to_chars(Oth,Codes) },
+	Codes.
 index_element_to_string( CExp ) -->
 	{ throw(cannot_process_index(CExp)) }.
 

@@ -143,9 +143,20 @@ ex(matrix_char) :-
      A <- a,
      write( a(A) ), nl.
 
+
+/*
+% ex(matrix_idx).
+%
+ex(matrix_idx) :-
+     a <- [[1,2,3],[4,5,6]],
+     <- a,
+	J <- aˆ[[1,3],*],
+	write( j(J) ), nl.
+	*/
+
 % ex(list).
 %
-%  A Prolog = pairlist to a R list. Shows 2 alternative way to access the list items.
+%  A Prolog = pairlist to an R list. Shows 2 alternative ways to access the list items.
 % 
 ex(list) :-
      a <- [x=1,y=0,z=3],
@@ -169,7 +180,7 @@ ex(list_ea) :-  % produces error
 
 % ex(list_eb).
 %
-% Produces error due to mismathc of arity of =.
+% Produces an error due to mismatch of arity of =.
 %
 ex(list_eb) :- 
      catch_controlled( a <- [x=1,y=0,=(z,3,4)] ),
@@ -277,7 +288,7 @@ ex(assign) :-
 
 % ex(assign_1).
 %
-%  Assign an R operation on matrices to a Prolog variable.
+%  Assign the result of an R operation on matrix and value to a Prolog variable.
 %
 ex(assign_1) :- 
      a <- [[1,2,3],[4,5,6]], 
@@ -287,7 +298,7 @@ ex(assign_1) :-
 
 % ex(assign_2).
 %
-%  Assign an R operation on matrices to a Prolog variable.
+%  Assign the result of an R operation on matrices to a Prolog variable.
 %
 ex(assign_2) :- 
      a <- [[1,2,3],[4,5,6]], 
@@ -299,8 +310,8 @@ ex(assign_2) :-
 
 % ex(assign_r).
 %
-%  Assign to an R variable and print it. Using c as an R variable is also a good test,
-%  as we test against c(...).
+% Assign values to R variables and operate on them. 
+% Using c as an R variable is also a good test, as we test against c(...).
 %
 ex(assign_r) :- 
      a <- [3],
@@ -312,7 +323,7 @@ ex(assign_r) :-
 
 % ex(dot_in_function_names).
 %
-%  Test dots in functions names via the .. mechanism.
+% Test dots in functions names via the .. mechanism.
 %
 ex(dot_in_function_names) :-
      a <- [1.1,2,3],
@@ -330,7 +341,7 @@ ex(dot_in_rvar) :-
      <- 'a.b',
      catch_controlled( <- print('a..b') ).
 
-% semi_column.
+% ex(semi_column).
 %
 %  A:B in R generates a vector of all integers from A to B.
 %
@@ -341,9 +352,9 @@ ex(semi_column) :-
      length( Z, Len ),
      write( len(Len) ), nl.
 
-% c_vectors.
+% ex(c_vectors).
 %
-%  r.eel also supports c() R function concatenation.
+%  r.eal also supports c() R function concatenation.
 %
 ex(c_vectors) :-
      a <- c(1,2,3,5),  % this goes via the fast route
@@ -353,7 +364,7 @@ ex(c_vectors) :-
      C <- a+b,
      write( 'C'(C) ), nl.
 
-% empty_args.
+% ex(empty_args).
 %
 %  Test calling R functions that take no arguments (via foo(.)).
 %
@@ -363,10 +374,11 @@ ex(empty_args) :-
      nl,
      <- dev..off(.).
 
-% binary_op.
+% ex(binary_op).
 %
-% Early versions of r..eal were not handling this example properly.  Thanks to Michiel Hildebrand for spotting this.
-% The correct resutl is =|[0.0,4.0]|=. First subtract v1 from v2 and then take power 2.
+% Early versions of r..eal were not handling this example properly.  
+% Thanks to Michiel Hildebrand for spotting this.
+% The correct answer is =|[0.0,4.0]|=. First subtract v1 from v2 and then take power 2.
 %
 ex(binary_op) :-
      v1 <- c(1,1),
@@ -419,7 +431,7 @@ ex(utf_2) :-
      write( x(X) ), nl.
 
 
-% plot_cpu.
+% ex(plot_cpu).
 %
 %  Create a plot of 4 time points. Each having a push and a pull time component.
 %  These are the time it takes to push a list through to R and the time to Pull the same
@@ -446,6 +458,7 @@ ex(debug) :-
      write( y(Y) ), nl,
      write( stopped_debugging ), nl.
 
+% ex(rtest).
 % Some tests from r_session, 
 %
 ex(rtest) :-
