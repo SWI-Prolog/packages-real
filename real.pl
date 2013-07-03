@@ -40,7 +40,9 @@
 	op(400,yfx,$),
 	op(400,yfx,@),
 	op(800,fx,@),
-     op(400,xfy,=+ )
+     op(400,xfy,=+ ),
+	op(100, yf, []),     % only works on SWI
+	op(100, yf, '()')    % only works on SWI
      ]).
 
 :- use_module(library(shlib)).
@@ -679,13 +681,28 @@ rvar_identifier_1( A@B, Rv, C ) :-
 	rvar_identifier_1( A, Rv, Aatom ),
      atomic_list_concat( [Aatom,'@',Batom], C ).
 	% term_to_atom( Aatom@Batom, C ).
+rvar_identifier_1( AB, Rv, C ) :-
+	compound( AB ),
+	AB =.. [[], [[B]], A],
+	!,
+     rvar_identifier_1( A, Rv, Aatom ),
+     rexpr_codes(B, [], BCs, [] ),
+     atom_codes( Batom, BCs ),
+     atomic_list_concat( [Aatom,'[[',Batom,']]'], C ).
 rvar_identifier_1( A^[[B]], Rv, C ) :-
      rvar_identifier_1( A, Rv, Aatom ),
      rexpr_codes(B, [], BCs, [] ),
      atom_codes( Batom, BCs ),
      atomic_list_concat( [Aatom,'[[',Batom,']]'], C ).
      % atomic_list_concat( [Aatom,'[["',Batom,'"]]'], C ).
-
+rvar_identifier_1( AB, A, C ) :-
+	compound( AB ),
+	AB =.. [[], B, A],
+	!,
+     indices_to_string( B, BCs, [] ),
+	% term_to_atom( B, Batom ),
+     atom_codes( Batom, BCs ),
+	atom_concat( A, Batom, C ).
 rvar_identifier_1( A^B, A, C ) :-
 	atom( A ),
 	is_list( B ),
@@ -717,6 +734,11 @@ rexpr_codes(Array,TmpRs) -->
 	array_to_c(Array,TmpV), !,
 	{ TmpRs = [TmpV] }.
 rexpr_codes(A,[]) -->
+	{ compound( A ) },
+	{ A =.. ['()', Fname] },
+	!,
+	add_atom(-Fname), "()".
+rexpr_codes(A,[]) -->
 	{ functor(A,Name,1),arg(1,A,'.')}, !,
 	add_atom(-Name), "()".
 /*   This can be used if we want c() to be passed by lists,
@@ -741,12 +763,26 @@ rexpr_codes(A,[]) -->
 rexpr_codes(A,[]) -->
 	{ number(A) }, !,
 	add_number(A).
+rexpr_codes(AKey, TmpRs) -->
+	{ compound(AKey),
+	  AKey =.. [[], [[Key]], A] },
+     !,
+	% rexpr_unquoted(A, [] ),
+	rexpr_codes(A, Atmp ),
+     "[[", rexpr_codes(Key, Ktmp), "]]",
+     { append(Atmp,Ktmp,TmpRs) }.
 rexpr_codes(A^[[Key]], TmpRs) -->
      !,
 	% rexpr_unquoted(A, [] ),
 	rexpr_codes(A, Atmp ),
      "[[", rexpr_codes(Key, Ktmp), "]]",
      { append(Atmp,Ktmp,TmpRs) }.
+rexpr_codes(AList, TmpRs) -->
+	{ compound(AList),
+	  AList =.. [[], List, A] },
+	!,
+	rexpr_codes(A, TmpRs),
+	indices_to_string( List ).
 rexpr_codes(A^List, TmpRs) -->
 	{ is_list(List) }, !,
 	rexpr_codes(A, TmpRs),
