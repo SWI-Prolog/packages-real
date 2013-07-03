@@ -783,7 +783,8 @@ rexpr_codes(S,TmpRs) -->
 	  binary(Na), atom_codes(Na,NaS),
           arg(1,S,A1), arg(2,S,A2)
         }, !,
-        { ( (Na=(<-);Na=(=)) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
+	   % fixme: we need something better in the following line (nicos)
+        { ( (Na=(<-);Na=(=);(Na=(+))) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
         Lft,
 	rexpr_codes(A1,TmpA1),
 	" ", NaS, " ",

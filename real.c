@@ -155,7 +155,7 @@ int_vector_sexp(term_t t, size_t len, SEXP *ansP)
   for(index=0; PL_get_list(tail, head, tail); index++)
   { int64_t val;
 
-    if ( PL_get_int64_ex(head, &val) )
+    if ( PL_get_int64(head, &val) )
     { INTEGER_DATA(ans)[index] = val;
     } else if ( PL_is_float(head) )
     { /* FIXME: Destroy ans */
