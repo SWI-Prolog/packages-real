@@ -383,9 +383,9 @@ install_in_osx :-
 install_in_osx :-
 	LastMac = '/Library/Frameworks/lib/R',
 	( exists_directory(LastMac) ->
-	debug( real, 'Setting R_HOME to: ~a', [MacTypical] )
+		debug( real, 'Setting R_HOME to: ~a', [LastMac] )
 		;
-	debug( real, 'Setting R_HOME to non-existing: ~a', [MacTypical] )
+		debug( real, 'Setting R_HOME to non-existing: ~a', [LastMac] )
 	),
 	setenv('R_HOME', LastMac ).
 
