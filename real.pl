@@ -341,7 +341,7 @@ dirpath_to_r_home( This, Rhome ) :-
 	atomic_list_concat( RevRight, '/', Rhome0 ),
 	atomic_concat( '/', Rhome0, Rhome).
 
-r_home_postfix( 'lib64/R' ) :- 
+r_home_postfix( 'lib64/R' ) :-
 	current_prolog_flag(address_bits, 64).
 r_home_postfix( 'lib/R' ).
 
@@ -461,11 +461,14 @@ end_r :-
 %   Nickname for <-(R).
 %
 r( RvarIn ) :-
-     (  rvar_identifier(RvarIn,_,RvarCs)
+     (  rvar_identifier(RvarIn,_,RvarCs) ->
+        true
         ; (atom(RvarIn),atom_codes(RvarIn,RvarCs))
      ),
 	!,
-	append(["print( ",RvarCs," )"], CmdCodes),
+	atom_codes('print( ', PrintOpen), % JW: I think we should be using atoms
+	atom_codes(' )', PrintClose),	  % JW: all along
+	append([PrintOpen,RvarCs,PrintClose], CmdCodes),
 	send_r_codes( CmdCodes ).
 r( R ) :-
 	rexpr_codes(R,TmpRs,Rcodes,[]),
@@ -820,12 +823,11 @@ rexpr_codes(S,TmpRs) -->
           arg(1,S,A1), arg(2,S,A2)
         }, !,
 	   % fixme: we need something better in the following line (nicos)
-        { ( (Na=(<-);Na=(=);(Na=(+))) -> Lft = "", Rgt = ""; Lft = "(", Rgt = ")" ) },
-        Lft,
+        left(Na),
 	rexpr_codes(A1,TmpA1),
 	" ", NaS, " ",
 	rexpr_codes(A2,TmpA2),
-	Rgt,
+	right(Na),
         {append(TmpA1,TmpA2,TmpRs)}.
 rexpr_codes(S,TmpRs) -->
 	{ S =.. [F|Args], F \== '.' },
@@ -833,6 +835,13 @@ rexpr_codes(S,TmpRs) -->
 	"(",
 	rexprs_codes(Args, true, F, TmpRs),
 	")".
+
+left(Na)  --> ({no_brace(Na)} -> "" ; "(").
+right(Na) --> ({no_brace(Na)} -> "" ; ")").
+
+no_brace(<-).
+no_brace(=).
+no_brace(+).
 
 rexprs_codes([], _, _, []) --> [].
 rexprs_codes([Arg|Args], Fin, Func, TmpRs) -->
