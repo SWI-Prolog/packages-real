@@ -425,7 +425,7 @@ ex(utf_1) :-
 %  Mostly Vitor's then Sander and last one from Nicos.
 %
 ex(utf_2) :-
-     x <- [hello, olá, 'जैसा कहर बरपा तो बर्बाद हो जाएगी मुंबई','Beëindigen',άμπελος],
+     x <- [hello, 'olá', 'जैसा कहर बरपा तो बर्बाद हो जाएगी मुंबई','Beëindigen','άμπελος'],
      <- x,
      X <- x,
      write( x(X) ), nl.
