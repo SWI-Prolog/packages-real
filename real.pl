@@ -41,8 +41,8 @@
 	op(400,yfx,@),
 	op(800,fx,@),
      op(400,xfy,=+ ),
-	op(100, yf, []),     % only works on SWI
-	op(100, yf, '()')    % only works on SWI
+	op(100, yf, []),
+	op(100, yf, '()')
      ]).
 
 :- use_module(library(shlib)).
@@ -58,7 +58,7 @@
 	  \+ r_started( true )	      % only display once
      )  ->
       nl, nl,
-      write( '!!!   r..eal notice: There is a known issue with swipl-win.exe. \n R\'s I/O streams cannot be connected to those of Prolog.\n So for instance, <- print(x) does not print x to the terminal.\n As a work-around for now, you can start SWI via swipl.exe' ),
+      write( '!!!   r..eal notice: There is a known issue with swipl-win.exe. \n R\'s I/O streams cannot be connected to those of Prolog.\n So for instance, <- print(x) does not print x to the terminal.\n All other functionalities are fine. To circumvent use things like X <- x, write( x ). \n If you need printing on console from R, you can start SWI via swipl.exe' ),
       nl, nl
       ;
       true
@@ -255,13 +255,13 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	0:1:1, 2012/01/27,  swi_binaries
+@version	0:1:2, 2013/11/3, the_stoic
 @license	Perl Artistic License
-@see		http://bioinformatics.nki.nl/~nicos/sware/real
+@see		http://stoics.org.uk/~nicos/sware/real
 @see		doc/html/real.html
 @see		doc/guide.pdf
 @see		doc/padl2013-real.pdf
-@see		examples/for_real.pl
+@see		pack(real/examples/for_real)
 @see		http://www.r-project.org/
 
 */
@@ -584,7 +584,8 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:1, date(2013,2,21), development ).
+real_version( 0:1:2, date(2013,11,3), the_stoic ).
+	% 0:1:2, 2013/11/3, the_stoic ).
      % 0:1:0, 2012/12/26, oliebollen
 
 %% real_citation( -Atom, -Bibterm ).
@@ -602,7 +603,7 @@ real_citation( Atom, bibtex(Type,Key,Pairs) ) :-
                year = 2013,
                month = 'January',
                address = 'Rome, Italy',
-               url     = 'http://bioinformatics.nki.nl/~nicos/pbs/padl2013-real.pdf'
+               url     = 'http://stoics.org.uk/~nicos/pbs/padl2013-real.pdf'
      ].
 
 %%% end of interface predicates
