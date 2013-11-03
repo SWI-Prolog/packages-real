@@ -105,6 +105,17 @@ The main modes for utilising the interface are
 Pass Prolog data to R, pass R data to Prolog or assign an R expression to
 an assignable R expression.
 
+---++ Testing
+
+There is a raft of examples packed in a sinlge file that test the library.
+
+==
+	?- [pack(real/examples/for_real)].
+
+	?- for_real.
+
+	?- edit( pack(real/examples/for_real) ).
+
 ---++ Syntax
 
 There are syntactic conventions in R that make unparsable prolog code.
@@ -125,6 +136,8 @@ Prolog constructs are converted by the library as follows:
      * + prepends strings, both for (Prolog) codes and atoms: +"String" and +'String'
      * If you want to ensure that you do not quote a string, use -"String".
      * Expressions that pose difficulty in translation can always be passed as unquoted Prolog atoms or strings.
+	* since  0:1:2  foo()  is valid syntax:  =|<- dev..off() |= works now (with no need for dev..off(.))
+	* since  0:1:2  mat[1] is valid syntax:  =|m[1] <- 4|= works now (with no need for m^[...])
 
 
 ---++ Data transfers
@@ -215,6 +228,8 @@ atoms or codes with + as in the above example.
 yes
 ?- e^[3] <- 17.
 yes
+?- e[3] <- 17.
+yes
 ?- Z <- e.
 Z = ['$NaN','$NaN',17.0]
 ?- e^[10] <- 12.
@@ -229,7 +244,8 @@ rtest :-
      <- x11(width=5,height=3.5),   % create a plotting window
 	<- plot(x,y)                  % plot the two samples
      r_wait,                       % wait for user to hit Enter
-	<- dev..off(.).               % close the plotting window
+	% <- dev..off(.).             % old syntax, still supported 
+	<- dev..off().                % close the plotting window. foo() now acceptable in supported Prologs
 
 tut6 :-
 	d <- outer(0:9, 0:9),

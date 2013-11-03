@@ -1,3 +1,8 @@
+0:1:2       2013 November 3   (the_stoic)
+   Added support for a[x,y] and a().
+	Corrected some branch variables, thanks to new Swi warnings.
+	Jan, added some stuff on strings support. 
+
 0:1:1       2013 January 17   (cross_compiled)
 	swipl-win.exe doesnot use the std I/O streams. So <-print/1 doesnot display
 	on console. Added message that only displays when Prolog was started with
