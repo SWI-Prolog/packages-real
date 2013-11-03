@@ -112,7 +112,8 @@ There is a raft of examples packed in a sinlge file that test the library.
 
 	?- for_real.
 
-	?- edit( pack(real/examples/for_real) ).
+	?- edit r..eal( pack(real/examples/for_real) ).
+==
 
 ---++ Syntax
 
