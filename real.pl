@@ -65,9 +65,7 @@
    ).
 
 
-/** <module> r..eal
-
-An interface to the R statistical software.
+/** <module> An interface to the R statistical software.
 
 ---++ Introduction
 
