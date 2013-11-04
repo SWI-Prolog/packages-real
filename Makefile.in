@@ -27,7 +27,7 @@ install-dummy::
 install-ritf:	$(SOLIBS) $(addprefix $(srcdir)/, $(LIBPL))
 		mkdir -p $(DESTDIR)$(SOLIBDIR)
 		rm -f $(DESTDIR)$(SOLIBDIR)/real.@SO@
-		$(INSTALL_PROGRAM) $(SOLIBS) $(SOLIBDIR)
+		$(INSTALL_PROGRAM) $(SOLIBS) $(DESTDIR)$(SOLIBDIR)
 		mkdir -p $(DESTDIR)$(PLLIBDIR)
 		for f in $(LIBPL); do \
 		  $(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(PLLIBDIR); \
