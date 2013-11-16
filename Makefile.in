@@ -59,7 +59,7 @@ uninstall::
 TEXEXTRA=	libreal.tex
 $(TEX):		$(TEXEXTRA)
 
-libreal.tex:	real.pl
+libreal.tex:	$(srcdir)/real.pl
 		$(PLTOTEX) --section 'library(real)' --out=$@
 
 
