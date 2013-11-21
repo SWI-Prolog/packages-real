@@ -508,7 +508,7 @@ pl_sexp(term_t t, SEXP *ansP)
     {
       if ( PL_is_functor(t, FUNCTOR_dot2) )
       { term_t head = PL_new_term_ref() ;
-	size_t len = list_length(t);
+	     size_t len = list_length(t);
 
 	if ( len == (size_t)-1 )
 	  return FALSE;
@@ -556,7 +556,6 @@ pl_sexp(term_t t, SEXP *ansP)
       } else if ( !PL_is_functor(t, FUNCTOR_boolop1) )
       { term_t arg1 = PL_new_term_ref();
          atom_t a;
-
           if ( !PL_get_arg(1, t, arg1) ) return PL_type_error("R-term (in pl_sexp, 2)", t);
           if ( !PL_get_atom(arg1,&a) ) return PL_type_error("R-term (in pl_sexp, 3)", t);
 
@@ -1070,11 +1069,15 @@ is_r_variable(term_t t)
   return o != R_UnboundValue;
 }
 
-
+#ifndef ATOM_dot
+#define ATOM_dot PL_new_atom(".")
+#endif
 
 install_t
 install_real(void)
-{ FUNCTOR_dot2 = PL_new_functor(PL_new_atom("."), 2);
+{ /* FUNCTOR_dot2 = PL_new_functor(PL_new_atom("."), 2); */
+
+  FUNCTOR_dot2 = PL_new_functor(ATOM_dot, 2);
   FUNCTOR_equal2 = PL_new_functor(PL_new_atom("="), 2);
   FUNCTOR_boolop1 = PL_new_functor(PL_new_atom("@"), 1);
   FUNCTOR_plus1 = PL_new_functor(PL_new_atom("+"), 1);

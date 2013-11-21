@@ -30,19 +30,19 @@
 	op(950,fx,<-),
 	op(950,yfx,<-),
 	op(600,xfy,~),
-	op(600,yfx,'..'),
-	op(400,yfx,'%x%'),
-	op(400,yfx,'%%'),
-	op(400,yfx,'%/%'),
-	op(400,yfx,'%*%'),
-	op(400,yfx,'%o%'),
-	op(400,yfx,'%in%'),
+	% op(600,yfx,'..'),
+	% op(400,yfx,'%x%'),  % function exists
+	% op(400,yfx,'%%'),   % mod 
+	% op(400,yfx,'%/%'),  % //
+	op(400,yfx,@*),  % op(400,yfx,'%*%'),  % matrix multiplication: inner product
+	op(400,yfx,@+),  % op(400,yfx,'%o%'),  % outer product ? 
+	% op(400,yfx,'%in%'), % function can be called instead
 	op(400,yfx,$),
 	op(400,yfx,@),
 	op(800,fx,@),
      op(400,xfy,=+ ),
-	op(100, yf, []),
-	op(100, yf, '()')
+	op(100, yf, [])
+	% op(100, yf, '()')
      ]).
 
 :- use_module(library(shlib)).
@@ -270,7 +270,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	0:1:3, 2013/11/5, development
+@version	0:1:3, 2013/11/21, development_inc_v7
 @license	Perl Artistic License
 @see		http://stoics.org.uk/~nicos/sware/real
 @see		doc/html/real.html
@@ -568,12 +568,14 @@ devoff :-
 %
 % Close all open devices.
 %
+/*
 devoff_all :-
      Dev <- dev..cur(.),
      Dev > 1,
      !,
      devoff,
      devoff_all.
+	*/
 devoff_all.
 
 %% r_wait
@@ -602,7 +604,7 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:3, date(2013,11,5), development ).
+real_version( 0:1:3, date(2013,11,21), development_inc_v7 ).
 	% 0:1:2, 2013/11/3, the_stoic ).
      % 0:1:0, 2012/12/26, oliebollen
 
@@ -689,10 +691,12 @@ rvar_identifier_1( Rvar, Rvar, Rvar ) :-
 	atom( Rvar ),
      ( catch(term_to_atom(Atom,Rvar),_,fail) ),
      Atom == Rvar.
+/*
 rvar_identifier_1( A..B, Atom, Atom ) :-
 	atom(B),
 	rvar_identifier_1( A, Aatom, _ ),
 	atomic_list_concat( [Aatom,'.',B], Atom ).
+	*/
 rvar_identifier_1( A$B, Rv, C ) :-
      rname_atom( B, Batom ),
 	rvar_identifier_1( A, Rv, Aatom ),
@@ -702,11 +706,7 @@ rvar_identifier_1( A@B, Rv, C ) :-
      rname_atom( B, Batom ),
 	rvar_identifier_1( A, Rv, Aatom ),
      atomic_list_concat( [Aatom,'@',Batom], C ).
-	% term_to_atom( Aatom@Batom, C ).
-rvar_identifier_1( AB, Rv, C ) :-
-	compound( AB ),
-	AB =.. [[], [[B]], A],
-	!,
+rvar_identifier_1( []([[B]],A), Rv, C ) :-
      rvar_identifier_1( A, Rv, Aatom ),
      rexpr_codes(B, [], BCs, [] ),
      atom_codes( Batom, BCs ),
@@ -716,20 +716,14 @@ rvar_identifier_1( A^[[B]], Rv, C ) :-
      rexpr_codes(B, [], BCs, [] ),
      atom_codes( Batom, BCs ),
      atomic_list_concat( [Aatom,'[[',Batom,']]'], C ).
-     % atomic_list_concat( [Aatom,'[["',Batom,'"]]'], C ).
-rvar_identifier_1( AB, A, C ) :-
-	compound( AB ),
-	AB =.. [[], B, A],
-	!,
+rvar_identifier_1( [](B,A), A, C ) :-
      indices_to_string( B, BCs, [] ),
-	% term_to_atom( B, Batom ),
      atom_codes( Batom, BCs ),
 	atom_concat( A, Batom, C ).
 rvar_identifier_1( A^B, A, C ) :-
-	atom( A ),
-	is_list( B ),
+     atom( A ),
+     is_list( B ),
      indices_to_string( B, BCs, [] ),
-	% term_to_atom( B, Batom ),
      atom_codes( Batom, BCs ),
 	atom_concat( A, Batom, C ).
 
@@ -740,6 +734,12 @@ rvar_identifier_1( A^B, A, C ) :-
 rexpr_codes(V,[]) -->
 	{ var(V) }, !,
 	{ throw(error(instantiation_error,r_interface)) }.
+rexpr_codes(T,[]) -->
+	{ current_predicate(string/1), string(T), 
+	  !,
+	  format( codes(S), "~s", [T]) 
+	},
+	"\"", S, "\"".
 rexpr_codes(+A,[]) -->
 	!,
 	{ atom(A) -> format(codes(S), '~a', [A]) ; format(codes(S), "~s", [A]) },
@@ -760,7 +760,7 @@ rexpr_codes(A,[]) -->
 	{ A =.. ['()', Fname] },
 	!,
 	add_atom(-Fname), "()".
-rexpr_codes(A,[]) -->
+rexpr_codes(A,[]) -->        					% fixme: remove when .
 	{ functor(A,Name,1),arg(1,A,'.')}, !,
 	add_atom(-Name), "()".
 /*   This can be used if we want c() to be passed by lists,
@@ -822,6 +822,7 @@ rexpr_codes(A@B,TmpA) -->
 	% rexpr_unquoted( A, TmpA ),
 	"@",
 	add_name( B ).
+/*
 rexpr_codes(A1..A2,TmpRs) --> !,
 	% rexpr_unquoted(A1, TmpRs1),
 	rexpr_codes(A1, TmpRs1),
@@ -829,6 +830,7 @@ rexpr_codes(A1..A2,TmpRs) --> !,
 	% rexpr_unquoted(A2, TmpRs2),
 	rexpr_codes(A2, TmpRs2),
      { append(TmpRs1, TmpRs2, TmpRs) }.
+	*/
 % R function definition
 rexpr_codes((A1 :- A2), TmpRs) -->
 	!,
@@ -836,9 +838,10 @@ rexpr_codes((A1 :- A2), TmpRs) -->
 	" ",
 	rexpr_codes(A2,TmpA2),
 	{append(TmpA1,TmpA2,TmpRs)}.
+
 rexpr_codes(S,TmpRs) -->
-	{ functor(S, Na, 2),
-	  binary(Na), atom_codes(Na,NaS),
+	{ functor(S, NaIn, 2),
+	  binary(NaIn,Na), atom_codes(Na,NaS),
           arg(1,S,A1), arg(2,S,A2)
         }, !,
 	   % fixme: we need something better in the following line (nicos)
@@ -911,8 +914,11 @@ index_element_to_string( ElR:ElL ) -->
 	index_element_to_string(ElR),
 	":",
 	index_element_to_string(ElL).
-index_element_to_string( +String ) -->
+index_element_to_string( +String ) -->  % fixme: remove at .
 	{ is_list(String) }, !,
+	"\"", String, "\"".
+index_element_to_string( +String ) -->
+	{ string(String) }, !,
 	"\"", String, "\"".
 index_element_to_string( CExp ) -->
 	{ CExp =.. [c|Cs] }, !,
@@ -1042,13 +1048,28 @@ fresh_r_variable(Plv) :-
 % this rightly fails on lm(speeds~exprs)
 % we are converting this to an operators version and we might
 % need to introduce a top-level version that checks for functions
-binary( Rname ) :-
-     current_op( _, Assoc, real:Rname ),
+binary( Plname, Rname ) :-
+     current_op( _, Assoc, real:Plname ),
+	binary_real_r( Plname, Rname ), 
      once( binary_op_associativity( Assoc ) ).
      % atomic_list_concat( [exists,'("',Rname,'",mode="function")'],  Atom ),
      % atom_codes( Atom, Rcodes ),
      % rexpr_to_pl_term( Rcodes, Rbool ),
      % Rbool == true.
+
+binary_real_r( Plname, Rname ) :-
+	binary_real_op( Plname, Rname ),
+	!.
+binary_real_r( OpName, OpName ).
+
+%% binary_real_op( +Plname, -Rname ).
+%
+% Rname is R's operator name for Plname. We only to define cases where Plname \== Rname.
+%
+binary_real_op(  @*, '%*%' ).
+binary_real_op(  @+, '%o%' ).
+binary_real_op(  //, '%/%' ).
+binary_real_op( mod, '%%'  ).
 
 binary_op_associativity( yfx ).
 binary_op_associativity( xfy ).
