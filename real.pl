@@ -30,19 +30,19 @@
 	op(950,fx,<-),
 	op(950,yfx,<-),
 	op(600,xfy,~),
-	op(600,yfx,'..'),
-	op(400,yfx,'%x%'),
-	op(400,yfx,'%%'),
-	op(400,yfx,'%/%'),
-	op(400,yfx,'%*%'),
-	op(400,yfx,'%o%'),
-	op(400,yfx,'%in%'),
+	% op(600,yfx,'..'),
+	% op(400,yfx,'%x%'),  % function exists
+	% op(400,yfx,'%%'),   % mod 
+	% op(400,yfx,'%/%'),  % //
+	op(400,yfx,@*),  % op(400,yfx,'%*%'),  % matrix multiplication: inner product
+	op(400,yfx,@@),  % op(400,yfx,'%o%'),  % outer product ? 
+	% op(400,yfx,'%in%'), % function can be called instead
 	op(400,yfx,$),
 	op(400,yfx,@),
 	op(800,fx,@),
      op(400,xfy,=+ ),
-	op(100, yf, []),
-	op(100, yf, '()')
+	op(100, yf, [])
+	% op(100, yf, '()')
      ]).
 
 :- use_module(library(shlib)).
@@ -565,12 +565,14 @@ devoff :-
 %
 % Close all open devices.
 %
+/*
 devoff_all :-
      Dev <- dev..cur(.),
      Dev > 1,
      !,
      devoff,
      devoff_all.
+	*/
 devoff_all.
 
 %% r_wait
@@ -686,10 +688,12 @@ rvar_identifier_1( Rvar, Rvar, Rvar ) :-
 	atom( Rvar ),
      ( catch(term_to_atom(Atom,Rvar),_,fail) ),
      Atom == Rvar.
+/*
 rvar_identifier_1( A..B, Atom, Atom ) :-
 	atom(B),
 	rvar_identifier_1( A, Aatom, _ ),
 	atomic_list_concat( [Aatom,'.',B], Atom ).
+	*/
 rvar_identifier_1( A$B, Rv, C ) :-
      rname_atom( B, Batom ),
 	rvar_identifier_1( A, Rv, Aatom ),
@@ -819,6 +823,7 @@ rexpr_codes(A@B,TmpA) -->
 	% rexpr_unquoted( A, TmpA ),
 	"@",
 	add_name( B ).
+/*
 rexpr_codes(A1..A2,TmpRs) --> !,
 	% rexpr_unquoted(A1, TmpRs1),
 	rexpr_codes(A1, TmpRs1),
@@ -826,6 +831,7 @@ rexpr_codes(A1..A2,TmpRs) --> !,
 	% rexpr_unquoted(A2, TmpRs2),
 	rexpr_codes(A2, TmpRs2),
      { append(TmpRs1, TmpRs2, TmpRs) }.
+	*/
 % R function definition
 rexpr_codes((A1 :- A2), TmpRs) -->
 	!,
@@ -834,8 +840,8 @@ rexpr_codes((A1 :- A2), TmpRs) -->
 	rexpr_codes(A2,TmpA2),
 	{append(TmpA1,TmpA2,TmpRs)}.
 rexpr_codes(S,TmpRs) -->
-	{ functor(S, Na, 2),
-	  binary(Na), atom_codes(Na,NaS),
+	{ functor(S, NaIn, 2),
+	  binary(NaIn,Na), atom_codes(Na,NaS),
           arg(1,S,A1), arg(2,S,A2)
         }, !,
 	   % fixme: we need something better in the following line (nicos)
@@ -1039,13 +1045,28 @@ fresh_r_variable(Plv) :-
 % this rightly fails on lm(speeds~exprs)
 % we are converting this to an operators version and we might
 % need to introduce a top-level version that checks for functions
-binary( Rname ) :-
-     current_op( _, Assoc, real:Rname ),
+binary( Plname, Rname ) :-
+     current_op( _, Assoc, real:Plname ),
+	binary_real_r( Plname, Rname ), 
      once( binary_op_associativity( Assoc ) ).
      % atomic_list_concat( [exists,'("',Rname,'",mode="function")'],  Atom ),
      % atom_codes( Atom, Rcodes ),
      % rexpr_to_pl_term( Rcodes, Rbool ),
      % Rbool == true.
+
+binary_real_r( Plname, Rname ) :-
+	binary_real_op( Plname, Rname ),
+	!.
+binary_real_r( OpName, OpName ).
+
+%% binary_real_op( +Plname, -Rname ).
+%
+% Rname is R's operator name for Plname. We only to define cases where Plname \== Rname.
+%
+binary_real_op(  @*, '%*%' ).
+binary_real_op(  @@, '%o%' ).
+binary_real_op(  //, '%/%' ).
+binary_real_op( mod, '%%'  ).
 
 binary_op_associativity( yfx ).
 binary_op_associativity( xfy ).

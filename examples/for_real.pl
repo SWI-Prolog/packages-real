@@ -321,6 +321,10 @@ ex(assign_r) :-
      c <- a + b,
      <- c.
 
+/*  disable for now. once Yap supports . in atoms
+    re-establish this, but make sure you restor
+    relevant flag back to its original setting.
+
 % ex(dot_in_function_names).
 %
 % Test dots in functions names via the .. mechanism.
@@ -330,7 +334,9 @@ ex(dot_in_function_names) :-
      <- a,
      x <- as..integer(a),
      <- x.
+	*/
 
+/* as aove
 % ex(dot_in_rvars).
 %
 %  Test dots in R variable names via the .. mechanism. Generates an error on the last goal.
@@ -340,6 +346,7 @@ ex(dot_in_rvar) :-
      <- a..b,
      <- 'a.b',
      catch_controlled( <- print('a..b') ).
+	*/
 
 % ex(semi_column).
 %
@@ -372,7 +379,7 @@ ex(empty_args) :-
      <- plot( 1:10, 1:10 ),
      findall( I, (between(1,6,I),write('.'), flush_output, sleep(1)), _ ),
      nl,
-     <- dev..off(.).
+     devoff.
 
 % ex(binary_op).
 %
@@ -397,7 +404,7 @@ ex(utf) :-
 	<- plot( c(1,2,3), c(3,2,1), xlab= +[945,0'/,937] ),
 	findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
 	nl,
-	<- dev..off(.).
+	devoff.
 
 
 % ex(utf_atom).
@@ -408,7 +415,7 @@ ex(utf_atom) :-
 	<- plot( c(1,2,3), c(3,2,1), xlab= +'α/Ω' ),
 	findall( I, (between(1,4,I),write('.'), flush_output, sleep(1)), _ ),
 	nl,
-	<- dev..off(.).
+	devoff.
 
 % ex( utf_1 ).
 %
@@ -462,7 +469,7 @@ ex(debug) :-
 % Some tests from r_session, 
 %
 ex(rtest) :-
-     <- set..seed(1),
+     <- 'set.seed'(1),  % fixme: dot
 	y <- rnorm(50),
 	<- y,
 	x <- rnorm(y),
@@ -470,7 +477,7 @@ ex(rtest) :-
      <- x11(width=5,height=3.5),
 	<- plot(x,y),
      r_wait,
-	<- dev..off(.),
+	devoff,
 	Y <- y,
 	write( y(Y) ), nl,
 	findall( Zx, between(1,9,Zx), Z ),
@@ -504,9 +511,9 @@ list_times :-
 tut(tut1) :-
 	z <- 0:9,
 	<- z,
-	digits <- as..character(z),
+	digits <- 'as.character'(z), % fixme: dot
 	<- digits,
-	d <- as..integer(digits),
+	d <- 'as.integer'(digits),  % fixme: dot
 	<- d.
 
 % changing the length of an object
@@ -571,7 +578,8 @@ tut(tut5) :-
 	<- z,
 	a <- array(0, dim=c(3,4,2)),
 	<- a,
-	ab <- z '%o%' a,
+	% ab <- z '%o%' a,
+	ab <- z @@ a,
 	<- ab,
      f <- ( function(x, y) :- cos(y)/(1 + x^2) ),
 	w <- outer(z, a, f),
@@ -580,7 +588,7 @@ tut(tut5) :-
 tut(tut6) :-
 	d <- outer(0:9, 0:9),
 	fr <- table(outer(d, d, +"-")),
-	r(plot(as..numeric(names(fr)), fr, type=+"h", xlab=+"Determinant", ylab=+"Frequency")),
+	r(plot('as.numeric'(names(fr)), fr, type=+"h", xlab=+"Determinant", ylab=+"Frequency")), % fixme: dot
      nl, write( '   type query: ``devoff.\'\' to close the plot display ' ), nl, nl.
 
 % auxiliary,
@@ -636,7 +644,7 @@ plot_cpu( Factor ) :-
           true
      ),
      points <- [10,100,500,1000],
-     points <- as..integer( points * Factor ),
+     points <- 'as.integer'( points * Factor ), % fixme: dot
      <- points,
      Points <- points,
      write( points(Points) ), nl,
