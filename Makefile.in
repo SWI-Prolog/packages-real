@@ -68,7 +68,7 @@ libreal.tex:	real.pl
 ################################################################
 
 check::
-		(cd $(srcdir) && $(PL) -q -f test_real.pl -g test_real,halt -t 'halt(1)' )
+		(cd $(srcdir) && $(PL) -q -f examples/test_real.pl -g test_real,halt -t 'halt(1)' )
 
 ################################################################
 # Clean
