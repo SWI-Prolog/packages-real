@@ -292,9 +292,10 @@ init_r_env :-
 :- if(current_predicate(win_registry_get_value/3)).
 init_r_env :-
 	% windows is windows
+        current_prolog_flag(windows, true),
 	( HKEY='HKEY_LOCAL_MACHINE/Software/R-core/R';
 		HKEY='HKEY_CURRENT_USER/Software/R-core/R' ),
-	win_registry_get_value(HKEY,'Current Version', Version),
+        catch(win_registry_get_value(HKEY,'Current Version', Version),_,fail),
 	!,
 	atomic_list_concat([HKEY,Version],'/',SecondKey),
 	win_registry_get_value(SecondKey,'InstallPath', RPath), !,
@@ -310,13 +311,15 @@ init_r_env :-
 	install_in_ms_windows(ToR).
 :- endif.
 init_r_env :-
+        current_prolog_flag(unix, true),
 	% typical Linux 64 bit setup (fedora)
 	current_prolog_flag(address_bits, 64),
 	Linux64 = '/usr/lib64/R',
 	exists_directory(Linux64), !,
-     debug( real, 'Setting R_HOME to: ~a', [Linux64] ),
+        debug( real, 'Setting R_HOME to: ~a', [Linux64] ),
 	setenv('R_HOME',Linux64).
 init_r_env :-
+        current_prolog_flag(unix, true),
 	% typical Linux  setup (Ubuntu)
 	Linux32 = '/usr/lib/R',
 	exists_directory( Linux32 ), !,
@@ -334,7 +337,7 @@ init_r_env :-
 			 ] ),
 	dirpath_to_r_home( This, Rhome ),
 	exists_directory( Rhome ), !,
-     debug( real, 'Setting R_HOME to bin relative: ~a', [Rhome] ),
+        debug( real, 'Setting R_HOME to bin relative: ~a', [Rhome] ),
 	setenv('R_HOME',Rhome).
 
 init_r_env :-
@@ -345,16 +348,16 @@ dirpath_to_r_home( This0, Rhome ) :-
 	read_link(This0, _, This), !,
 	dirpath_to_r_home( This, Rhome ).
 dirpath_to_r_home( This, Rhome ) :-
-	% here()
-	atomic_list_concat( Consts, '/', This ),
-	reverse( Consts, RevConsts ),
-	% nth0( Nth, RevConsts, bin ),
-	!,
-	to_nth( RevConsts, bin, Right ),
-	r_home_postfix( Post ),
-	reverse( [Post|Right], RevRight ),
-	atomic_list_concat( RevRight, '/', Rhome0 ),
-	atomic_concat( '/', Rhome0, Rhome).
+     file_directory_name( This, R1 ),
+     file_base_name(R1, Execdir) ->
+     ( Execdir == bin ->
+       Rhome = R1
+     ;
+       % windows with multiple binaries
+       file_directory_name( R1, R2 ),
+       file_base_name(R2, bin),
+       file_directory_name( R2, Rhome )
+     ).
 
 r_home_postfix( 'lib64/R' ) :-
 	current_prolog_flag(address_bits, 64).
