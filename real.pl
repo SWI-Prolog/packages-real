@@ -34,8 +34,8 @@
 	% op(400,yfx,'%x%'),  % function exists
 	% op(400,yfx,'%%'),   % mod 
 	% op(400,yfx,'%/%'),  % //
-	op(400,yfx,@*),  % op(400,yfx,'%*%'),  % matrix multiplication: inner product
-	op(400,yfx,@+),  % op(400,yfx,'%o%'),  % outer product ? 
+	op(400,yfx,@*@),  % op(400,yfx,'%*%'),  % matrix multiplication: inner product
+	op(400,yfx,@^@),  % op(400,yfx,'%o%'),  % outer product ? 
 	% op(400,yfx,'%in%'), % function can be called instead
 	op(400,yfx,$),
 	op(400,yfx,@),
@@ -1063,8 +1063,8 @@ binary_real_r( OpName, OpName ).
 %
 % Rname is R's operator name for Plname. We only to define cases where Plname \== Rname.
 %
-binary_real_op(  @*, '%*%' ).
-binary_real_op(  @+, '%o%' ).
+binary_real_op(  @*@, '%*%' ).
+binary_real_op(  @^@, '%o%' ).
 binary_real_op(  //, '%/%' ).
 binary_real_op( mod, '%%'  ).
 

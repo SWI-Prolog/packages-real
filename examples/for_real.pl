@@ -579,7 +579,7 @@ tut(tut5) :-
 	a <- array(0, dim=c(3,4,2)),
 	<- a,
 	% ab <- z '%o%' a,
-	ab <- z @+ a,
+	ab <- z @^@ a,
 	<- ab,
      f <- ( function(x, y) :- cos(y)/(1 + x^2) ),
 	w <- outer(z, a, f),
