@@ -379,7 +379,19 @@ ex(empty_args) :-
      <- plot( 1:10, 1:10 ),
      findall( I, (between(1,6,I),write('.'), flush_output, sleep(1)), _ ),
      nl,
-     devoff.
+     devoff.  % fixme use dev.off() when Yap starts supporting it.
+
+% ex(string).
+%
+%  Test new (2013/11/22) string type in SWI Prolog v7.
+%
+ex(string) :-
+	( (current_predicate(string/1),string("abc")) ->
+     	<- plot( 1:10, 1:10, main="native string type has arrived to Prolog" ),
+     	findall( I, (between(1,6,I),write('.'), flush_output, sleep(1)), _ )
+		;
+		true
+	).
 
 % ex(binary_op).
 %
@@ -579,7 +591,7 @@ tut(tut5) :-
 	a <- array(0, dim=c(3,4,2)),
 	<- a,
 	% ab <- z '%o%' a,
-	ab <- z @+ a,
+	ab <- z @^@ a,
 	<- ab,
      f <- ( function(x, y) :- cos(y)/(1 + x^2) ),
 	w <- outer(z, a, f),

@@ -1,26 +1,28 @@
+:- module(test_real,
+	  [ test_real/0
+	  ]).
 
-:- ensure_loaded( library(real) ).
+:- asserta(user:file_search_path(foreign, '.')).
+:- asserta(user:file_search_path(library, '.')).
+:- asserta(user:file_search_path(library, '../plunit')).
+
+:- use_module( library(real) ).
+:- use_module(library(plunit)).
 
 test_real :-
-	test_real( test_1 ),
-	test_real( test_2 ).
+	run_tests([ real
+		  ]).
 
-test_real( Goal ) :-
-	% shall we report ?
-	write( doing(Goal) ), nl,
-	( call(Goal) ->
-		write( done(Goal) ), nl
-		;
-		write( failed(Goal) ), nl
-	).
+:- begin_tests(real).
 
-
-test_1 :-
+test(int_array) :-
 	x <-  c(1,2,3),
 	X <- x,
 	X == [1,2,3].
 
-test_2 :-
+test(mixed_array)  :-
 	y <- c(1,2,3.1),
 	Y <- y,
 	Y = [1.0,2.0,3.1].
+
+:- end_tests(real).
