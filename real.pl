@@ -270,7 +270,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	0:1:3, 2013/11/21, development_inc_v7
+@version	1:0:0, 2013/12/06, sinter_class
 @license	Perl Artistic License
 @see		http://stoics.org.uk/~nicos/sware/real
 @see		doc/html/real.html
@@ -604,7 +604,7 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 0:1:3, date(2013,11,21), development_inc_v7 ).
+real_version( 1:0:0, date(2013,12,6), sinter_class ).
 	% 0:1:2, 2013/11/3, the_stoic ).
      % 0:1:0, 2012/12/26, oliebollen
 
