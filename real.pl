@@ -756,12 +756,11 @@ rexpr_codes(Array,TmpRs) -->
 	array_to_c(Array,TmpV), !,
 	{ TmpRs = [TmpV] }.
 rexpr_codes(A,[]) -->
-	{ compound( A ) },
-	{ A =.. ['()', Fname] },
+	{ compound(A,'()',[Fname]) },
 	!,
 	add_atom(-Fname), "()".
 rexpr_codes(A,[]) -->        					% fixme: remove when .
-	{ functor(A,Name,1),arg(1,A,'.')}, !,
+	{ compound(A,Name,[_]), arg(1,A,'.') }, !,
 	add_atom(-Name), "()".
 /*   This can be used if we want c() to be passed by lists,
 but it currently does not accommodate c(1:3,1:3)
@@ -786,8 +785,7 @@ rexpr_codes(A,[]) -->
 	{ number(A) }, !,
 	add_number(A).
 rexpr_codes(AKey, TmpRs) -->
-	{ compound(AKey),
-	  AKey =.. [[], [[Key]], A] },
+	{ compound(AKey,[], [[[Key]], A]) },
      !,
 	% rexpr_unquoted(A, [] ),
 	rexpr_codes(A, Atmp ),
@@ -800,8 +798,7 @@ rexpr_codes(A^[[Key]], TmpRs) -->
      "[[", rexpr_codes(Key, Ktmp), "]]",
      { append(Atmp,Ktmp,TmpRs) }.
 rexpr_codes(AList, TmpRs) -->
-	{ compound(AList),
-	  AList =.. [[], List, A] },
+	{ compound(AList, [], [List,A]) },
 	!,
 	rexpr_codes(A, TmpRs),
 	indices_to_string( List ).
@@ -840,7 +837,8 @@ rexpr_codes((A1 :- A2), TmpRs) -->
 	{append(TmpA1,TmpA2,TmpRs)}.
 
 rexpr_codes(S,TmpRs) -->
-	{ functor(S, NaIn, 2),
+	{ 
+	  arity(S, NaIn, 2),
 	  binary(NaIn,Na), atom_codes(Na,NaS),
           arg(1,S,A1), arg(2,S,A2)
         }, !,
@@ -852,7 +850,8 @@ rexpr_codes(S,TmpRs) -->
 	right(Na),
         {append(TmpA1,TmpA2,TmpRs)}.
 rexpr_codes(S,TmpRs) -->
-	{ S =.. [F|Args], F \== '.' },
+	{ compound( S, F, Args ) },
+	% { S =.. [F|Args], F \== '.' },
 	add_atom( -F ),
 	"(",
 	rexprs_codes(Args, true, F, TmpRs),
@@ -1085,6 +1084,22 @@ halt_r :-
 	end_r,
 	!.
 halt_r.
+
+% makes some sense of SWI v7's half-house extensions on compounds:
+%
+compound( Term, Name, Args ) :-
+	current_predicate( compound_name_arguments/3 ),
+	!,
+	compound_name_arguments( Term, Name, Args ).
+compound( Term, Name, Args ) :-
+	Term =.. [Name,Args].
+
+arity( Term, Name, Arity ) :-
+	current_predicate( compound_name_arity/3 ),
+	!,
+	compound_name_arity( Term, Name, Arity ).
+arity( Term, Name, Arity ) :-
+	functor( Term, Name, Arity ).
 
 % error handling
 :- multifile prolog:message//1.
