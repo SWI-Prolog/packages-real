@@ -1090,8 +1090,10 @@ halt_r.
 compound( Term, Name, Args ) :-
 	current_predicate( compound_name_arguments/3 ),
 	!,
+	compound( Term ),
 	compound_name_arguments( Term, Name, Args ).
 compound( Term, Name, Args ) :-
+	compound( Term ),
 	Term =.. [Name,Args].
 
 arity( Term, Name, Arity ) :-
