@@ -51,6 +51,9 @@ REAL_term_type( term_t t )
     switch(objtype)
     {
       case PL_ATOM:
+#ifdef PL_NIL
+      case PL_NIL:
+#endif
          { int got_v = 0;
            int bool_vP = 0;
            atom_t tmp_atom;
@@ -68,6 +71,9 @@ REAL_term_type( term_t t )
         }
         break;
       case PL_TERM:
+#ifdef PL_LIST_PAIR
+      case PL_LIST_PAIR:
+#endif
          {
             if ( !PL_is_functor(t, FUNCTOR_boolop1) )
 	            return PL_TERM;
@@ -111,15 +117,15 @@ logical_vector_sexp(term_t t, size_t len, SEXP *ansP)
     if ( PL_get_bool(head, &val) )
     { LOGICAL_DATA(ans)[index] = val;
     } else
-    { 
+    {
        term_t arg1 = PL_new_term_ref();
        atom_t a;
-       if (PL_is_functor(head,FUNCTOR_boolop1) && PL_get_arg(1,head,arg1) && PL_get_atom(arg1,&a) 
+       if (PL_is_functor(head,FUNCTOR_boolop1) && PL_get_arg(1,head,arg1) && PL_get_atom(arg1,&a)
                && (a == ATOM_true || a == ATOM_false)  )
-          { 
-            if ( a == ATOM_true ) 
+          {
+            if ( a == ATOM_true )
                LOGICAL_DATA(ans)[index] = 1;     // FIXME: use the R T/F values here
-           else if (a == ATOM_false ) 
+           else if (a == ATOM_false )
                LOGICAL_DATA(ans)[index] = 0;
            else                                // it should never come here
            { UNPROTECT(nprotect);
@@ -393,7 +399,7 @@ matrix_sexp(term_t t, term_t head, size_t len, int itype, SEXP *ansP)
 
 	    if ( PL_get_chars(cell, &s,
 			       CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
-	      { 
+	      {
 		CHARACTER_DATA(ans)[index] = mkCharCE(s, CE_UTF8);
 	    } else
 	    { /* FIXME: deallocate work */
@@ -531,15 +537,15 @@ pl_sexp(term_t t, SEXP *ansP)
 	    { if ( PL_is_functor(head, FUNCTOR_equal2) )
 		{
 		  return named_list_sexp(t, len, ansP);
-		} 
+		}
 	      else if ( PL_is_functor(head, FUNCTOR_dot2) )
-		{ 
+		{
 		  return matrix_sexp(t, head, len, 0, ansP);
-		} 
+		}
 	      else if ( PL_is_functor(head, FUNCTOR_plus1) )
 		{
 		  return  char_vector_sexp(t, len, ansP);
-		} 
+		}
 	      else
 		{
 		  return PL_type_error("R-termo", head);
@@ -561,7 +567,7 @@ pl_sexp(term_t t, SEXP *ansP)
 
           return char_vector_sexp(arg1, 1, ansP);
         } else
-      { 
+      {
 	return PL_type_error("R-terma", t);
       }
 
@@ -733,7 +739,7 @@ put_sexp(term_t t, SEXP s)
 	  for (i = shape[0]-1; i>=0; i--)
 	    { const char *chars = CHAR(CHARACTER_DATA(s)[i]);
 	      term_t head = PL_new_term_ref();
-	  
+
 	      if ( !PL_unify_chars(head, PL_ATOM|REP_UTF8, -1, chars) ||
 		 !PL_cons_list(tail, head, tail) )
 	      return FALSE;
@@ -848,9 +854,9 @@ process_expression(const char * expression)
   //  PROTECT(tmp = mkString(expression));
   PROTECT( tmp = ScalarString(mkCharCE(expression, CE_UTF8)) );
   PROTECT( e = R_ParseVector(tmp, 1, &status, R_NilValue) );
-  
-  if (status != PARSE_OK) 
-     {   
+
+  if (status != PARSE_OK)
+     {
      Sdprintf("Error: %d, in parsing R expression.\n", status );
      /* do not continue with R_tryEval() */
          UNPROTECT(2);
@@ -874,7 +880,7 @@ static foreign_t
 send_r_command(term_t cmd)
 { char *s = NULL;
   term_t except = PL_new_term_ref();
- 
+
   if ( PL_get_chars(cmd, &s, CVT_ALL|REP_UTF8|CVT_EXCEPTION|BUF_MALLOC) )
     { if ( process_expression(s) ) {
 	PL_free(s);
@@ -1043,7 +1049,7 @@ set_r_variable(term_t rvar, term_t value)
     // UNPROTECT(1);				/* FIXME: Dubious */
     return TRUE;
   }
-  if (vname) 
+  if (vname)
     PL_free(vname);
   return FALSE;
 }
@@ -1051,9 +1057,9 @@ set_r_variable(term_t rvar, term_t value)
 static foreign_t
 is_r_variable(term_t t)
 {
-  SEXP name,o; 
+  SEXP name,o;
   char *s;
- 
+
   /* is this variable defined in R?.  */
   if ( PL_get_chars(t, &s, CVT_ATOM|CVT_STRING|CVT_EXCEPTION|BUF_DISCARDABLE|REP_UTF8) )
     { PROTECT(name = NEW_CHARACTER(1));
