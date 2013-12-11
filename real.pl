@@ -1093,12 +1093,12 @@ compound( Term, Name, Args ) :-
 	compound( Term ),
 	compound_name_arguments( Term, Name, Args ).
 compound( Term, Name, Args ) :-
-	compound( Term ),
 	Term =.. [Name,Args].
 
 arity( Term, Name, Arity ) :-
 	current_predicate( compound_name_arity/3 ),
 	!,
+	compound( Term ),
 	compound_name_arity( Term, Name, Arity ).
 arity( Term, Name, Arity ) :-
 	functor( Term, Name, Arity ).
