@@ -112,7 +112,7 @@ There is a raft of examples packed in a sinlge file that test the library.
 
 	?- for_real.
 
-	?- edit r..eal( pack(real/examples/for_real) ).
+	?- edit( pack(real/examples/for_real) ).
 ==
 
 ---++ Syntax
@@ -270,7 +270,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	1:0:2, 2013/12/23, sinter_class
+@version	1:0:4, 2013/12/25, sinter_class
 @license	Perl Artistic License
 @see		http://stoics.org.uk/~nicos/sware/real
 @see		doc/html/real.html
@@ -604,8 +604,8 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 1:0:2, date(2013,12,23), sinter_class ).
-	% 1:0:2, 2013/12/23, sinter_class
+real_version( 1:0:4, date(2013,12,25), sinter_class ).
+	% 1:0:0, 2013/12/6, sinter_class
 	% 0:1:2, 2013/11/3, the_stoic
      % 0:1:0, 2012/12/26, oliebollen
 
@@ -1094,7 +1094,7 @@ compound( Term, Name, Args ) :-
 	compound( Term ),
 	compound_name_arguments( Term, Name, Args ).
 compound( Term, Name, Args ) :-
-	Term =.. [Name,Args].
+	Term =.. [Name|Args].
 
 arity( Term, Name, Arity ) :-
 	current_predicate( compound_name_arity/3 ),
