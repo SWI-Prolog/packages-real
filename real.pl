@@ -4,7 +4,7 @@
 %    Copyright (C): Nicos Angelopoulos, Universidade do Porto, VU University Amsterdam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  This file is part of r..eal
+%  This file is part of real
 %  distributed according to Perl Artistic License
 %  check LICENSE file for distribution license
 %
@@ -54,16 +54,6 @@
 
 :- dynamic( real:r_started/1 ).
 
-:- ( ( current_prolog_flag(hwnd,_), % true iff ran via swipl-win.exe
-	  \+ r_started( true )	      % only display once
-     )  ->
-      nl, nl,
-      write( '!!!   r..eal notice: There is a known issue with swipl-win.exe. \n R\'s I/O streams cannot be connected to those of Prolog.\n So for instance, <- print(x) does not print x to the terminal.\n All other functionalities are fine. To circumvent use things like X <- x, write( x ). \n If you need printing on console from R, you can start SWI via swipl.exe' ),
-      nl, nl
-      ;
-      true
-   ).
-
 
 /** <module> An interface to the R statistical software.
 
@@ -78,7 +68,7 @@ and html documentation from PlDoc (doc/html/real.html). There is large number
 of examples in `examples/for_real.pl`.
 
 A single predicate (<-/2,<-/1) channels
-the bulk of the interactions. In addition to using R as a shared library, r..eal uses
+the bulk of the interactions. In addition to using R as a shared library, real uses
 the c-interfaces of SWI/Yap and R to pass objects in both directions.
 The usual mode of operation is to load Prolog values on to R variables and then call
 R functions on these values. The return value of the called function can be either placed
@@ -149,9 +139,9 @@ There are two ways to pass prolog data to R. The more efficient one is by using
  Rvar <- PLdata
 ==
 
-Where are Pldata is one of the basic data types (number,boolean) or a list.
-This is implemented as C code and transfers via C data
-between R and Prolog. In what follows atomic PLval data are simply considered as singleton lists.
+Where Pldata is one of the basic data types (number,boolean) a list or a c/n term.
+This transfers via C data between R and Prolog. In what follows atomic PLval data
+are simply considered as singleton lists.
 Flat Pldata lists are translated to R vectors and lists of one level of nesting to R matrices
 (which are 2 dimensional arrays in R parlance). The type of values of the vector or matrice is
 taken to be the type of the first data element of the Pldata according to the following :
@@ -163,9 +153,11 @@ taken to be the type of the first data element of the Pldata according to the fo
 
 Booleans are represented in prolog as true/false atoms.
 Currently arrays of aribtrary dimensions are not supported in the low-level interface.
-Note that in R a scalar is just a one element vector.  When passing non-scalars the interface will
-assume the type of the object is that of the first scalar until it encounters something different.
-R..eal will currently will re-start and repopulate partial integers for floats as follows:
+Note that in R a scalar is just a one element vector.  When passing non-scalars the
+interface will assume the type of the object is that of the first scalar until it encounters
+something different.
+Real will currently re-start and repopulate partial integers for floats as illustrated
+below:
 
 ==
 r <- [1,2,3].         % pass 1,2,3 to an R vector r
@@ -201,7 +193,7 @@ X = [abc, def].
 
 ==
 
-In addition Prolog data can be passed through the expression mechanism.
+In addition, Prolog data can be passed through the expression mechanism.
 That is, data appearing in an arbitrary R expression will be parsed and be part of the long
 string that will be passed from Prolog to R for evaluation.
 This is only advisable for short data structures. For instance,
@@ -273,10 +265,10 @@ logical :-
 @version	1:0:4, 2013/12/25, sinter_class
 @license	Perl Artistic License
 @see		http://stoics.org.uk/~nicos/sware/real
-@see		doc/html/real.html
-@see		doc/guide.pdf
-@see		doc/padl2013-real.pdf
 @see		pack(real/examples/for_real)
+@see		pack(real/doc/real.html)
+@see		pack(real/doc/guide.pdf)
+@see		pack(real/doc/padl2013-real.pdf)
 @see		http://www.r-project.org/
 
 */
@@ -417,6 +409,7 @@ install_in_osx :-
 start_r :-
      \+ r_started( true ),
      !,
+	swipl_wins_warn,
 	init_r_env,
 	use_foreign_library(foreign(real)),
 	init_r,
@@ -461,7 +454,7 @@ end_r :-
 %  Pass Rexpr1 <- Rexpr2 to R.
 %
 %  Note that all Rexpr* are first processed as described in the section about syntax before passed to R.
-% R..eal also looks into Rexpressions and passes embeded lists to hidden R variables in order
+% Real also looks into Rexpressions and passes embeded lists to hidden R variables in order
 % to pass large data efficiently.
 %
 %  c/n terms are recognised as PLdata
@@ -587,14 +580,14 @@ r_wait :-
 
 %% real_debug.
 %
-%  A common (SWI/Yap) interface for starting debugging messages for r..eal.
+%  A common (SWI/Yap) interface for starting debugging messages for real.
 %
 real_debug :-
      debug(real).
 
 %% real_nodebug.
 %
-%  A common (SWI/Yap) interface for stopping debugging messages for r..eal.
+%  A common (SWI/Yap) interface for stopping debugging messages for real.
 %
 real_nodebug :-
      nodebug(real).
@@ -1104,13 +1097,22 @@ arity( Term, Name, Arity ) :-
 arity( Term, Name, Arity ) :-
 	functor( Term, Name, Arity ).
 
+swipl_wins_warn :-
+	current_prolog_flag(hwnd,_), % true iff ran via swipl-win.exe
+	!,
+	L = "    library(real) notice: ",
+	A = "         There is a known issue with swipl-win.exe.",
+	B = "         R's I/O streams cannot be connected to those of Prolog.",
+	C = "         So for instance, <- print(x) does not print x to the terminal.",
+	D = "         All other functionalities are fine.",
+	E = "         To circumvent use things like X <- x, write( x ).",
+	F = "         If you need printing on console from R, you can start SWI via swipl.exe",
+	Lines = [nl,nl,L,nl,nl,A,nl,B,nl,C,nl,D,nl,E,nl,F,nl,nl],
+	print_message_lines(current_output, '', Lines ).
+swipl_wins_warn.
+
 % error handling
 :- multifile prolog:message//1.
-
-/*
-prolog:message(What) -->
-     { write( here(What) ), nl, fail}.
-     */
 
 prolog:message(unhandled_exception(real_error(Message))) -->
 	message(Message).
@@ -1121,7 +1123,7 @@ prolog:message(real_error(Message)) -->
 message( correspondence ) -->
      ['R was unable to digest your statement, either syntax or existance error.' - [] ].
 message( r_root ) -->
-     ['R..eal was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
+     ['Real was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
 
 
 :- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(halt_r); true ).
