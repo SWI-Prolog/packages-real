@@ -1,3 +1,7 @@
+1:0:6       2014 ... ?
+	Fixed passing unamed R lists to Prolog pairs. Missing name is the number
+	position. 
+
 0:1:2       2013 November 3   (the_stoic)
    Added support for a[x,y] and a().
 	Corrected some branch variables, thanks to new Swi warnings.

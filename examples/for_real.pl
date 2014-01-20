@@ -168,6 +168,17 @@ ex(list) :-
      A <- a,
      write( a(A) ), nl.
 
+% ex(list).
+%
+%  R allows for unamed lists.
+% 
+ex(unamed) :-
+	 li <- 'list()',
+	 li[[1]] <- c(1,2,3),
+	  <- li,
+	  L <- li,
+	  write( l(L) ), nl.
+
 % ex(list_ea).
 %
 % Produces error due to name of constructor: -.

@@ -723,7 +723,19 @@ put_sexp(term_t t, SEXP s)
 	  for (i = LENGTH(s)-1; i>=0; i--)
 	  { SEXP elem = VECTOR_ELT(s,i) ;
 
-	    if ( !PL_put_atom_chars(av+0, CHAR(STRING_ELT(names,i))) ||
+	   /* R allows for unamed, named lists */
+		/* fixme: temporary sticky tape */
+		/* Currently we are passing back an integer, probably best to pass the atom of the integer */
+		 if (names == R_NilValue) {
+				if (!PL_put_integer(av+0, i+1)) return FALSE;
+		 	} else {
+		      if (!PL_put_atom_chars(av+0, CHAR(STRING_ELT(names,i)))) return FALSE; 
+			};
+
+	    if ( 
+		 /* !PL_put_atom_chars(av+0, CHAR(STRING_ELT(names,i))) || */
+		 
+		 /* !PL_put_atom_chars(av+0, nmcache[i]) || */
 		 !put_sexp(av+1, elem) ||
 		 !PL_cons_functor_v(head, FUNCTOR_equal2, av) ||
 		 !PL_cons_list(tail, head, tail) )
