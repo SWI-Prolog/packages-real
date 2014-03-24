@@ -25,6 +25,8 @@
      r_wait/0,
      devoff/0,
      devoff_all/0,
+     r_serve/0,
+     r_thread_loop/0,
      (<-)/1,
 	(<-)/2,
 	op(950,fx,<-),
@@ -45,6 +47,11 @@
 	% op(100, yf, '()')
      ]).
 
+:- multifile
+	user:portray/1.
+:- dynamic
+	user:portray/1.
+
 :- use_module(library(shlib)).
 :- use_module(library(lists)).
 :- use_module(library(apply_macros)).
@@ -53,7 +60,7 @@
 :- use_module(library(debug)).
 
 :- dynamic( real:r_started/1 ).
-
+:- create_prolog_flag( real, none, [type(atom)] ).
 
 /** <module> An interface to the R statistical software.
 
@@ -64,16 +71,25 @@ It is the result of the efforts of two research groups that have worked in paral
 The syntactic emphasis on a minimalistic interface.
 
 In the doc/ directory of the distribution there is user's guide, a published paper
-and html documentation from PlDoc (doc/html/real.html). There is large number
-of examples in `examples/for_real.pl`.
+and html documentation from PlDoc. There is large number of examples in `examples/for_real.pl`.
 
-A single predicate (<-/2,<-/1) channels
-the bulk of the interactions. In addition to using R as a shared library, real uses
+By default when the library is loaded an R object is started which will serve the 
+R commands. If prefs:start_r_auto(false) is in memory, the R object is not loaded and the user
+needs to issue start_r/0 to do that. 
+
+A single predicate (<-/2,<-/1) channels the bulk of the interactions between Prolog and R.  In addition to using R as a shared library, real uses
 the c-interfaces of SWI/Yap and R to pass objects in both directions.
 The usual mode of operation is to load Prolog values on to R variables and then call
 R functions on these values. The return value of the called function can be either placed
 on R variable or passed back to Prolog.  It has been tested extensively on current
 SWI and YAP on Linux machines but it should also compile and work on MS operating systems and Macs.
+
+Since v1.1 Real supports threads for web services.
+In this scenario, the R object is served by the main thread. This is compatible 
+with the current Prolog servers ran as Unix services although you need a patched version of 
+http_unix_daemon.pl for this type of demployment (one such file is included in Real sources).
+See http://stoics.org.uk/~nicos/sware/real/ws.html
+and in directory examples/ws_hist
 
 The main modes for utilising the interface are
 ==
@@ -262,7 +278,7 @@ logical :-
 
 @author	Nicos Angelopoulos
 @author	Vitor Santos Costa
-@version	1:0:4, 2013/12/25, sinter_class
+@version	1:1:0, 2013/3/24, thankless_task
 @license	Perl Artistic License
 @see		http://stoics.org.uk/~nicos/sware/real
 @see		pack(real/examples/for_real)
@@ -331,7 +347,6 @@ init_r_env :-
 	exists_directory( Rhome ), !,
         debug( real, 'Setting R_HOME to bin relative: ~a', [Rhome] ),
 	setenv('R_HOME',Rhome).
-
 init_r_env :-
      throw( real_error(r_root) ).
 
@@ -402,28 +417,28 @@ install_in_osx :-
 % interface predicates
 
 %%	start_r.
-%	Start an R object. This is done automatically upon loading the library.
+%	Start an R object. This is done automatically upon loading the library,
+%    except if prefs:start_r_auto(false) is in memory.
 %    Only 1 instance should be started per Prolog session.
 %    Multiple sessions will be ignored silently.
 %
 start_r :-
-     \+ r_started( true ),
-     !,
+	current_prolog_flag( real, none ),
+	!,
 	swipl_wins_warn,
 	init_r_env,
 	use_foreign_library(foreign(real)),
 	init_r,
-     retractall( r_started(_) ),
-     assert( r_started(true) ).
+	set_prolog_flag( real, started ).
 start_r.
 
 %%	end_r.
 %
-%    End the connection to the R process.
+%    End the connection to the R object.
+%
 end_r :-
-	% so that module systems doesn't complain when
-	% initialisation fails to find R.
-	stop_r.
+	stop_r,
+	set_prolog_flag( real, none ).
 
 %%	'<-'(+Rvar).
 %%	'<-'(+Rexpr).
@@ -465,12 +480,19 @@ end_r :-
 % be easy to implement.
 %
 '<-'(X,Y) :-
-     r(X,Y ).
+     r(X,Y).
 
 %% r( R )
 %
 %   Nickname for <-(R).
 %
+r( R ) :-
+	thread_self( Self ),
+	Self \== main,
+	% current_prolog_flag( real, thread ),
+	!,
+	r_thread( main, Self, r(R) ).
+
 r( RvarIn ) :-
      (  rvar_identifier(RvarIn,_,RvarCs) ->
         true
@@ -494,6 +516,24 @@ r( _Other ) :-
 %
 %    Nickname for <-(L,R).
 %
+r( A, B ) :-
+	thread_self( Self ),
+	Self \== main,
+	debug( real, 'Calling from thread:~p', Self ),
+	!,
+	r_thread( main, Self, r(A,B) ).
+	% thread_send_message( main, real_call(Caller,Real) ),
+	% thread_get_message( Caller, real_ply(Ball,Real) ),
+	% fixme: we should be able to write the caught Ball here, except if it is 
+	% is thread related, in which case possibilities are probably also limited
+	
+/*
+r( A, B ) :-
+	current_prolog_flag( real, thread ),
+	!,
+     debug( real, 'Using R on thread',  [] ),
+	r_thread( r(A,B) ).
+	*/
 r( Plvar, RvarIn ) :-
      var(Plvar),
      rvar_identifier( RvarIn, RvarIn, _ ),
@@ -522,10 +562,72 @@ r( _Plvar, _Rexpr ) :-
      write( user_error, 'Cannot decipher modality of <-/2. \n ' ), nl,
      fail.
 
+% r_thread_loop.
+%
+% Starts a loop that serves R calls received from 
+% <-/1 and <-/2 calls from other threads.
+% It should always be run on thread *main*.
+% To stop it, query from any thread in the pool:
+% ==
+%    <- r_thread_loop_stop.
+% ==
+% 
+r_thread_loop :-
+	thread_get_message(main, Mess ),
+	r_thread_message( Mess ).
+
+r_thread_message( quit ) :-
+	!,
+	halt(0).
+r_thread_message( real_call(Caller,Goal) ) :-
+     debug( real, 'In r_thread_loop got ~p, from ~p', [Goal,Caller] ),
+	r_thread_serve( Goal, Caller ).
+
+r_thread_serve( r(r_thread_loop_stop), Caller ) :-
+     % debug( real, 'In r_thread_loop2 got ~p from ~p', [Goal,Caller] ),
+	% Goal =.. [Name|Args],
+     % debug( real, 'Name ~p args ~p', [Name,Args] ),
+	% Goal = <-(r_thread_loop_stop),
+	!,
+     debug( real, 'Caught stop_loop signal from caller: ~p', Caller ).
+r_thread_serve( Goal, Caller ) :-
+	catch( Goal, All, Ball=All ),
+	% catch( with_mutex( real, Goal ), All, Ball=All ),
+     debug( real, 'Called ~p, caught ~p', [Goal,Ball] ),
+	thread_send_message( Caller, real_ply(Ball,Goal) ),
+	r_thread_loop.
+
+%% r_serve.
+%
+%  Serves any R calls that are waiting on the thread queue.
+%  The queue is populated by calls to <-/1 and <-/2 that are called
+%  on other threads. The predicate succeeds if there are no calls
+%  in the queue.
+%
+r_serve :-
+	thread_peek_message(main, _G),
+	!,
+	thread_get_message(main, real_call(Caller,Goal) ),
+     debug( real, 'In main got ~p, from ~p', [Goal,Caller] ),
+	catch( with_mutex( real, Goal ), All, Ball=All ),
+     debug( real, 'Called ~p, caught ~p', [Goal,Ball] ),
+	thread_send_message( Caller, real_ply(Ball,Goal) ),
+	r_serve.
+r_serve.
+
+r_thread( Eval, Caller, Real ) :-
+	% thread_self(Caller),
+	debug( real, 'Sending call ~p from caller ~p to evaluator ~p', [Real,Caller,Eval] ),
+	thread_send_message( Eval, real_call(Caller,Real) ),
+	thread_get_message( Caller, real_ply(Ball,Real) ),
+	debug( real, 'Caller ~p received goal ~p and got exception ~p', [Caller,Real,Ball] ),
+	( Ball = Real -> true; throw(real_error(thread(Real,Ball))) ).
+
 %%	is_rvar(+Rvar).
 %         True if Rvar is an atom and a known variable in the R environment.
 is_rvar( Rvar ) :-
      is_rvar( Rvar, _ ).
+
 %%	is_rvar(+Rvar,-RvarAtom).
 %         True if Rvar is a term and a known variable in the R environment.
 %         RvarAtom is the atomic representation of the Rvar term.
@@ -597,7 +699,7 @@ real_nodebug :-
 %  Version and release Date (data(Y,M,D) term). Note is either a
 %  note or nickname for the release. In git development sources this is set to `development´.
 %
-real_version( 1:0:4, date(2013,12,25), sinter_class ).
+real_version( 1:1:0, date(2013,3,24), thanksless_task ).
 	% 1:0:0, 2013/12/6, sinter_class
 	% 0:1:2, 2013/11/3, the_stoic
      % 0:1:0, 2012/12/26, oliebollen
@@ -625,6 +727,13 @@ real_citation( Atom, bibtex(Type,Key,Pairs) ) :-
 % maybe add this to the interface ?
 r_remove( Plvar ) :-
      <- remove( Plvar ).
+
+start_r_auto :-
+	current_predicate( prefs:start_r_auto/1 ),
+	prefs:start_r_auto( false ),
+	!.
+start_r_auto :-
+	start_r.
 
 send_r_codes( Rcodes ) :-
      debug( real, 'Sending to R: ~s', [Rcodes] ),
@@ -1074,6 +1183,7 @@ boolean_atom( false ).
 % Only on SWI, bug Vitor for at_halt/1.
 halt_r :-
 	r_started(_),
+	retractall( r_started(_) ),
 	devoff_all,
 	end_r,
 	!.
@@ -1115,16 +1225,38 @@ swipl_wins_warn.
 :- multifile prolog:message//1.
 
 prolog:message(unhandled_exception(real_error(Message))) -->
+	{ debug( real, 'Unhandled ~p', Message ) },
 	message(Message).
 
 prolog:message(real_error(Message)) -->
+	{ debug( real, 'Real error ~p', Message ) },
 	message(Message).
-
+	
 message( correspondence ) -->
      ['R was unable to digest your statement, either syntax or existance error.' - [] ].
 message( r_root ) -->
      ['Real was unable to find the R root directory. \n If you have installed R from sources set $R_HOME to point to $PREFIX/lib/R.\n You should also make sure libR.so is in a directory appearing in $LD_LIBRARY_PATH' - [] ].
+message( thread(G,real_error(Exc)) ) -->
+	% ( Ball = Real -> true; throw(real_error(thread(Real,Ball))) ).
+	{ debug( real, 'Exception ~p', Exc ) },
+	message( Exc ),
+	['\nR above was caught from thread execution while invoking ~p' - [G] ]. 
+% error(existence_error(r_variable,x),context(real:robj_to_pl_term/2,_G395)
+% message( thread(G,error(existence_error(r_variable,X),_,_)) ) -->
+message( thread(G,error(Error,Context)) ) -->
+	% ( Ball = Real -> true; throw(real_error(thread(Real,Ball))) ).
+	{ debug( real, 'Attempt to print error/2 ball ~p', error(Error,Context) ) },
+	{ print_message( error, error(Error,Context)  ) },
+	['Above error was caught from thread execution while invoking ~p' - [G] ]. 
+message( thread(G,Exc) ) -->
+	{ debug(real,'In with ~p',Exc) },
+     ['R thread was unable to digest your statement ~p, and caught exception: ~p.' - [G,Exc] ].
 
+user:portray( r(R) ) :-
+	format('<- ~w', [R] ).
+user:portray( r(L,R) ) :-
+	format('~w <- ~w', [L,R]).
+	% write( L <- R ).
 
 :- ( current_prolog_flag(version_data,swi(_,_,_,_)) -> at_halt(halt_r); true ).
-:- initialization(start_r, now).
+:- initialization(start_r_auto, now).

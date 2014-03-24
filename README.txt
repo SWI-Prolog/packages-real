@@ -1,28 +1,42 @@
 
-r..eal,  0:1:0, December 2012
+real
 ---
 
-r..eal is a c-based interface for connecting R to Prolog. 
+Real is a c-based interface for connecting R to Prolog. 
 See the documentation at doc/html/real.html for more information.
 There is also a paper doc/padl2013-real.pdf and a user's guide
-doc/guide.pdf .
+doc/guide.pdf.
 
 This version works on current versions of SWI and YAP.
-To get the latest git version of r..eal goto 
-
-   git clone git://www.swi-prolog.org/home/pl/git/packages/real.git
 
 
 INSTALL
 ---
 
-See doc/guide.pdf for instructions about stable versions.
+To install stable versions: 
+
+ SWI-Prolog
+
+   ?- pack_intall( real ).
+
+ Yap 
+   install Yap itself with
+   configure --with-R
+
+See doc/guide.pdf for further details on stable versions.
+
+Git access
+---
+
+To get the latest git version goto 
+
+   git clone git://www.swi-prolog.org/home/pl/git/packages/real.git
 
 To install developmental versions do:
 
-SWI-Prolog
+ SWI-Prolog (a)
 
- Install last stable r..eal with 
+ Install last stable real with 
  ?- pack_install( real ).
  
  do 
@@ -35,23 +49,31 @@ SWI-Prolog
 
  ?- pack_rebuild( real ).
 
-Yap: 
-replace $YAP/packages/real with the development version you downloaded
-and rebuilt Yap with 
+ SWI-Prolog (b)
+   clone real into pl-devel/packages/real
+	add this to your build script
+	export EXTRA_PKGS="real"
+	build SWI from sources as per usual
 
-configure --with-R
+ Yap
+   replace $YAP/packages/real with the development version you downloaded
+   and rebuilt Yap with 
 
+   configure --with-R
 
 Test
 ---
- ?- [examples/for_real].
- ?- for_real.
+ SWI
 
-In your prolog system.
+   ?- [pack('pack/real/examples/for_real')]. 
+   ?- for_real.
 
+ Yap
+   ?- [examples/for_real].
+   ?- for_real.
 
 ---
 
 Nicos Angelopoulos and Vitor Santos Costa
 
-December, 2012.
+December, 2013.

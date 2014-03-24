@@ -1,6 +1,15 @@
-1:0:6       2014 ... ?
+
+1:1:0       2014/02/15
+   Added prefs:start_r_auto(false), which when present at loading time
+	will stop the library from running start_r automatically.
+	Added create_prolog_flag( real, none, [type(atom)] ). 
+	None = no R object running, started = R object started, 
+	thread = R object run in separate thread. 
+	Added library(real_thread) for running real on a separate thread.
+
+1:0:4       2014/12/25
 	Fixed passing unamed R lists to Prolog pairs. Missing name is the number
-	position. 
+	position. Added example for that.
 
 0:1:2       2013 November 3   (the_stoic)
    Added support for a[x,y] and a().
