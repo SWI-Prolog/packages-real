@@ -1,5 +1,5 @@
 
-real
+Real
 ---
 
 Real is a c-based interface for connecting R to Prolog. 
@@ -7,7 +7,8 @@ See the documentation at doc/html/real.html for more information.
 There is also a paper doc/padl2013-real.pdf and a user's guide
 doc/guide.pdf.
 
-This version works on current versions of SWI and YAP.
+Real works on current versions of SWI and YAP.
+As of version 1.1 there is support for using Real on SWI web-servers.
 
 
 INSTALL
@@ -72,8 +73,11 @@ Test
    ?- [examples/for_real].
    ?- for_real.
 
+
 ---
-
 Nicos Angelopoulos and Vitor Santos Costa
+December, 2012.
 
-December, 2013.
+Updates: Nicos Angelopoulos
+Dec. 2013,
+March, 2014

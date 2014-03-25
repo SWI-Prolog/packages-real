@@ -341,7 +341,8 @@ init_r_env :-
 init_r_env :-
 	absolute_file_name( path('R'), This,
 			 [ extensions(['',exe]),
-			   access(execute)
+			   access(execute),
+			   file_errors(fail) % Wouter Beek, 14.03.18
 			 ] ),
 	dirpath_to_r_home( This, Rhome ),
 	exists_directory( Rhome ), !,
