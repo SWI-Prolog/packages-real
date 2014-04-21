@@ -3,7 +3,8 @@
 #include <Rembedded.h>
 #include <R.h>
 #include <Rinternals.h>
-#if HAVE_RINTERFACE_H || !defined(_YAP_NOT_INSTALLED_)
+// #if HAVE_RINTERFACE_H || !defined(_YAP_NOT_INSTALLED_) // nicos: commented out 14.4.21
+#if !(__WINDOWS__)
 #include <Rinterface.h>
 #define R_SIGNAL_HANDLERS 1
 #endif
